@@ -86,6 +86,33 @@
   .move { font-size: 12.5px; font-weight: 600; color: var(--accent); display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 8px; }
   .move:hover { background: var(--accent-soft); }
   .move svg.lucide { width: 14px; height: 14px; }
+  .day { background: var(--column); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .day-head { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
+  .day-add { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; color: var(--accent); background: var(--surface); box-shadow: var(--shadow); margin-inline-start: auto; }
+  .day-add:hover { background: var(--accent); color: #fff; }
+  .day-empty { font-size: 13px; color: var(--muted); padding: 6px 2px 4px; }
+  .week-grid { display: grid; gap: 10px; grid-template-columns: 1fr; align-items: start; }
+  @media (min-width: 640px) { .week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 900px) { .week-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (min-width: 1180px) { .week-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+  .witem { display: flex; align-items: flex-start; gap: 8px; background: var(--surface); border-radius: 10px; padding: 8px 9px; box-shadow: var(--shadow); }
+  .witem .check { width: 20px; height: 20px; border-radius: 6px; }
+  .witem .check svg.lucide { width: 13px; height: 13px; }
+  .w-title { flex: 1; min-width: 0; text-align: start; font-size: 13.5px; font-weight: 600; line-height: 1.45; overflow-wrap: break-word; }
+  .w-title:hover { color: var(--accent); }
+  .witem.is-done .w-title { text-decoration: line-through; color: var(--muted); }
+  .pdot { width: 8px; height: 8px; border-radius: 999px; margin-top: 7px; flex-shrink: 0; }
+  .w-del { color: var(--muted); margin-top: 1px; }
+  .w-del:hover { color: var(--danger); }
+  .w-del svg.lucide { width: 15px; height: 15px; }
+  .dchip { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; padding: 6px 8px; border-radius: 11px; border: 1.5px solid var(--line); background: var(--surface); line-height: 1.35; }
+  .dchip b { font-size: 13px; white-space: nowrap; }
+  .dchip small { white-space: nowrap; }
+  .dchip small { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .dchip:hover { border-color: #c7ced6; }
+  .dchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .dchip.on small { color: #d8f3ee; }
+  .dchip.wknd { opacity: .6; }
   .confirm-del { font-size: 12.5px; font-weight: 700; color: var(--danger); background: #fdecec; border-radius: 9px; padding: 5px 10px; }
 
   .lbl { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
@@ -213,8 +240,14 @@ function fmtDue(s) {
   return fmtShort(s);
 }
 const fmtDay = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(fromIso(s));
-// الأحد القادم: بداية أسبوع الدوام التالي
-const nextSunday = () => { const d = fromIso(today()); return addDays(today(), 7 - d.getDay() || 7); };
+const fmtWeekday = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long' }).format(fromIso(s));
+const fmtDayMonth = s => new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long' }).format(fromIso(s));
+const diffDays = (a, b) => Math.round((fromIso(b) - fromIso(a)) / 86400000);
+const isWeekend = s => [5, 6].includes(fromIso(s).getDay()); // الجمعة والسبت
+// بداية الأسبوع (الأحد) مع إزاحة بالأسابيع
+const weekStart = (offset = 0) => addDays(today(), -fromIso(today()).getDay() + 7 * offset);
+const weekDays = offset => Array.from({ length: 7 }, (_, i) => addDays(weekStart(offset), i));
+const weekOf = d => Math.floor(diffDays(weekStart(0), d) / 7);
 function fmtTime(t) {
   const [h, m] = t.split(':').map(Number);
   return `${pad(((h + 11) % 12) + 1)}:${pad(m)} ${h < 12 ? 'ص' : 'م'}`;
@@ -362,26 +395,53 @@ function column(key) {
     </section>`;
 }
 
+let weekOffset = 0;
+
+// خطة الأسبوع: الأسبوع كاملاً من الأحد إلى السبت، بكل مهام كل يوم
 function upcomingSection() {
-  const list = state.tasks.filter(isUpcoming)
-    .sort((a, b) => a.due.localeCompare(b.due) || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
-  const groups = [];
-  list.forEach(t => { const g = groups[groups.length - 1]; g && g.due === t.due ? g.items.push(t) : groups.push({ due: t.due, items: [t] }); });
+  const days = weekDays(weekOffset);
+  const start = days[0], end = days[6];
+  const byDay = d => state.tasks.filter(t => t.due === d)
+    .sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
+  const shown = days;
+  const later = state.tasks.filter(t => isUpcoming(t) && t.due > end).length;
   return `
     <section class="mt-8" aria-labelledby="up-h">
       <div class="col-head mb-3">
         <span style="color:#6d28d9"><i data-lucide="calendar-range"></i></span>
-        <h2 id="up-h" class="font-bold text-[17px]">المهام القادمة</h2>
-        <span class="count num" style="background:var(--column)">${list.length}</span>
-        <button class="move ms-auto" data-action="add-upcoming"><i data-lucide="plus"></i>إضافة مهمة قادمة</button>
+        <h2 id="up-h" class="font-bold text-[17px]">خطة الأسبوع</h2>
+        <span class="text-sm muted font-semibold num">${esc(fmtDayMonth(start))} – ${esc(fmtDayMonth(end))}</span>
+        <div class="flex items-center gap-1 ms-auto">
+          ${weekOffset !== 0 ? `<button class="move" data-action="week-now">هذا الأسبوع</button>` : ''}
+          <button class="icon-btn" data-action="week" data-n="-1" aria-label="الأسبوع السابق"><i data-lucide="chevron-right"></i></button>
+          <button class="icon-btn" data-action="week" data-n="1" aria-label="الأسبوع التالي"><i data-lucide="chevron-left"></i></button>
+        </div>
       </div>
-      ${groups.length ? groups.map(g => `
-        <div class="mb-5">
-          <h3 class="text-sm font-bold muted mb-2 num">${esc(fmtDay(g.due))}${g.due === addDays(today(), 1) ? ' · غداً' : ''}</h3>
-          <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 items-start">${g.items.map(taskCard).join('')}</ul>
-        </div>`).join('')
-        : `<p class="empty">خطّط لأسبوعك: أضف مهمة بتاريخ قادم وستظهر هنا، ثم تنتقل إلى «مهام اليوم» تلقائياً في يومها.</p>`}
+      <div class="week-grid">
+        ${shown.map(d => { const items = byDay(d); return `
+          <div class="day" ${d === today() ? 'style="box-shadow: inset 0 0 0 2px var(--accent)"' : ''}>
+            <div class="day-head">
+              <div class="min-w-0">
+                <h3 class="font-bold text-[15px] leading-tight">${esc(fmtWeekday(d))}</h3>
+                <span class="text-xs muted font-semibold num">${esc(fmtDayMonth(d))}${d === today() ? ' · اليوم' : d === addDays(today(), 1) ? ' · غداً' : ''}</span>
+              </div>
+              <button class="day-add" data-action="add-on" data-d="${d}" aria-label="إضافة مهمة ليوم ${esc(fmtWeekday(d))}"><i data-lucide="plus"></i></button>
+            </div>
+            ${items.length ? `<ul class="flex flex-col gap-2">${items.map(weekItem).join('')}</ul>` : `<p class="day-empty">لا توجد مهام</p>`}
+          </div>`; }).join('')}
+      </div>
+      ${later ? `<p class="text-sm muted font-semibold mt-3 num">و${later} ${later === 1 ? 'مهمة' : 'مهام'} بعد ${esc(fmtDayMonth(end))}. استخدم السهم للانتقال إلى الأسابيع التالية.</p>` : ''}
     </section>`;
+}
+
+function weekItem(t) {
+  const P = prioOf(t), done = t.status === 'done';
+  return `
+    <li class="witem ${done ? 'is-done' : ''}" data-id="${t.id}">
+      <button class="check ${done ? 'on' : ''}" data-action="toggle" role="checkbox" aria-checked="${done}" aria-label="${done ? 'إلغاء الإتمام' : 'إتمام المهمة'}"><i data-lucide="check"></i></button>
+      <button class="w-title" data-action="edit" title="تعديل">${esc(titleOf(t))}</button>
+      <span class="pdot" style="background:${P.fg}" title="${P.label}"></span>
+    </li>`;
 }
 
 function taskCard(t) {
@@ -425,6 +485,7 @@ let draft = null, formError = '', confirmAction = null;
 
 function openForm(task) {
   draft = JSON.parse(JSON.stringify(task));
+  formWeek = weekOf(draft.due || today());
   formError = '';
   renderForm();
   setTimeout(() => modalRoot.querySelector('#f-title')?.focus(), 30);
@@ -465,14 +526,16 @@ function renderForm() {
           </div>
         </fieldset>
 
+        <fieldset>
+          <legend class="lbl">يوم المهمة</legend>
+          <div id="f-days">${dayStrip()}</div>
+        </fieldset>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="lbl" for="f-due">تاريخ الاستحقاق</label>
+            <label class="lbl" for="f-due">تاريخ الاستحقاق (أو اختر أي تاريخ)</label>
             <input id="f-due" type="date" class="input num" value="${esc(draft.due)}">
-            <div class="flex flex-wrap gap-2 mt-2">
-              ${[['اليوم', today()], ['غداً', addDays(today(), 1)], ['الأحد القادم', nextSunday()]].map(([l, d]) => `<button type="button" class="sugg" data-action="due-quick" data-d="${d}">${l}</button>`).join('')}
-            </div>
-            <p id="f-due-hint" class="text-xs font-semibold mt-1.5" style="color:#6d28d9" ${draft.due > today() && draft.status === 'today' ? '' : 'hidden'}>ستظهر في «المهام القادمة» حتى يحين موعدها.</p>
+            <p id="f-due-hint" class="text-xs font-semibold mt-1.5" style="color:#6d28d9" ${draft.due > today() && draft.status === 'today' ? '' : 'hidden'}>ستظهر في «خطة الأسبوع» تحت يومها، ثم تنتقل إلى «مهام اليوم» في موعدها.</p>
           </div>
           <div>
             <label class="lbl" for="f-type">التصنيف</label>
@@ -504,12 +567,33 @@ function renderForm() {
         ${formError ? `<p class="err" role="alert">${formError}</p>` : ''}
 
         <div class="flex gap-2 justify-end flex-wrap pt-1">
+          ${isEdit ? `<button type="button" class="btn me-auto" style="color:var(--danger)" data-action="form-delete"><i data-lucide="trash-2"></i>حذف</button>` : ''}
           <button type="button" class="btn" data-action="close">إلغاء</button>
           <button type="submit" class="btn btn-primary"><i data-lucide="${isEdit ? 'check' : 'plus'}"></i>${isEdit ? 'حفظ التعديلات' : 'إضافة المهمة'}</button>
         </div>
       </form>
     </div>`;
   refreshIcons();
+}
+
+let formWeek = 0;
+function dayStrip() {
+  const due = modalRoot.querySelector('#f-due')?.value || draft.due;
+  const days = weekDays(formWeek);
+  const label = d => d === today() ? 'اليوم' : d === addDays(today(), 1) ? 'غداً' : fmtWeekday(d);
+  return `
+    <div class="flex items-center gap-1">
+      <button type="button" class="icon-btn" data-action="fweek" data-n="-1" aria-label="الأسبوع السابق"><i data-lucide="chevron-right"></i></button>
+      <div class="grid grid-cols-4 sm:grid-cols-7 gap-1.5 flex-1">
+        ${days.map(d => `<button type="button" class="dchip ${d === due ? 'on' : ''} ${isWeekend(d) ? 'wknd' : ''}" data-action="day-pick" data-d="${d}"><b>${label(d)}</b><small class="num">${esc(fmtDayMonth(d))}</small></button>`).join('')}
+      </div>
+      <button type="button" class="icon-btn" data-action="fweek" data-n="1" aria-label="الأسبوع التالي"><i data-lucide="chevron-left"></i></button>
+    </div>`;
+}
+function refreshDayStrip() {
+  const box = modalRoot.querySelector('#f-days');
+  if (box) { box.innerHTML = dayStrip(); refreshIcons(); }
+  updateDueHint();
 }
 
 function readForm() {
@@ -564,7 +648,8 @@ function updateDueHint() {
 }
 
 modalRoot.addEventListener('change', e => {
-  if (draft && (e.target.id === 'f-due' || e.target.name === 'status')) updateDueHint();
+  if (draft && e.target.id === 'f-due' && e.target.value) { formWeek = weekOf(e.target.value); refreshDayStrip(); }
+  if (draft && e.target.name === 'status') updateDueHint();
   if (!draft || e.target.id !== 'f-type') return;
   readForm();
   draft.type = e.target.value;
@@ -590,7 +675,7 @@ modalRoot.addEventListener('submit', e => {
     toast('تم حفظ التعديلات');
   } else {
     state.tasks.push(t);
-    toast(isUpcoming(t) ? `أُضيفت إلى المهام القادمة (${fmtDue(t.due)})` : 'تمت إضافة المهمة');
+    toast(isUpcoming(t) ? `أُضيفت إلى خطة الأسبوع (${fmtDue(t.due)})` : 'تمت إضافة المهمة');
   }
   save(); closeModal(); render();
 });
@@ -602,7 +687,15 @@ modalRoot.addEventListener('click', e => {
   if (act === 'close-overlay' && e.target !== a) return;
   if (act === 'close' || act === 'close-overlay') closeModal();
   if (act === 'confirm-ok') { const fn = confirmAction; closeModal(); fn && fn(); }
-  if (act === 'due-quick') { modalRoot.querySelector('#f-due').value = a.dataset.d; updateDueHint(); }
+  if (act === 'form-delete' && draft) {
+    const id = draft.id;
+    openConfirm('حذف المهمة؟', 'سيتم حذف هذه المهمة نهائياً.', 'حذف', () => {
+      state.tasks = state.tasks.filter(x => x.id !== id);
+      save(); render(); toast('تم حذف المهمة');
+    });
+  }
+  if (act === 'day-pick') { modalRoot.querySelector('#f-due').value = a.dataset.d; refreshDayStrip(); }
+  if (act === 'fweek') { formWeek += +a.dataset.n; refreshDayStrip(); }
   if (act === 'sugg') { const inp = modalRoot.querySelector('#f-title'); inp.value = a.dataset.v; inp.focus(); }
   if (act === 'gen-image') generateImage();
   if (act === 'print') window.print();
@@ -756,7 +849,9 @@ app.addEventListener('click', e => {
 
   if (act === 'school') { state.school = a.dataset.id; savePrefs(); load(); render(); }
   if (act === 'add') openForm(newTask(a.dataset.type));
-  if (act === 'add-upcoming') openForm({ ...newTask('custom'), due: addDays(today(), 1) });
+  if (act === 'add-on') openForm({ ...newTask('custom'), due: a.dataset.d });
+  if (act === 'week') { weekOffset += +a.dataset.n; render(); }
+  if (act === 'week-now') { weekOffset = 0; render(); }
   if (act === 'infographic') openInfographic();
   if (act === 'sample') loadSample();
   if (act === 'toggle' && t) {
