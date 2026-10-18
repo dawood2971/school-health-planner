@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مخطط الصحة المدرسية</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  /* Layout: لوحة جانبية للإضافة السريعة والملخص + خط زمني بفترتين (الدوام / ما بعد الدوام) */
+  :root {
+    --bg: #edf3f1;
+    --surface: #ffffff;
+    --surface-2: #f5f9f8;
+    --ink: #10302c;
+    --muted: #5a706c;
+    --line: #d5e2de;
+    --accent: #0b7a6e;
+    --accent-ink: #ffffff;
+    --after: #a8681a;
+    --ok: #15803d;
+    --warn: #b45309;
+    --danger: #c2410c;
+    --font-display: "El Messiri", "IBM Plex Sans Arabic", Tahoma, sans-serif;
+    --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1614; --surface: #12211e; --surface-2: #172a26; --ink: #e2eeeb; --muted: #9ab1ac;
+      --line: #23403a; --accent: #3cbfae; --accent-ink: #06201c; --after: #e2a94a;
+      --ok: #4ade80; --warn: #f2b14a; --danger: #fb8a5b; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1614; --surface: #12211e; --surface-2: #172a26; --ink: #e2eeeb; --muted: #9ab1ac;
+    --line: #23403a; --accent: #3cbfae; --accent-ink: #06201c; --after: #e2a94a;
+    --ok: #4ade80; --warn: #f2b14a; --danger: #fb8a5b; color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+  .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+  .display { font-family: var(--font-display); text-wrap: balance; }
+  .muted { color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+  .num { font-variant-numeric: tabular-nums; }
+  svg.lucide { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; padding: 8px 14px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); transition: background .15s, border-color .15s; }
+  .btn:hover { background: var(--surface-2); border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+  .icon-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; color: var(--muted); border: 1px solid transparent; }
+  .icon-btn:hover { background: var(--surface-2); color: var(--ink); border-color: var(--line); }
+  .icon-btn.danger:hover { color: var(--danger); }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+  .seg button, .seg label { flex: 1; text-align: center; padding: 7px 12px; border-radius: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .seg .on, .seg input:checked + span { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .seg label { padding: 0; }
+  .seg label span { display: block; padding: 7px 12px; border-radius: 9px; }
+
+  .quick { display: flex; align-items: center; gap: 10px; text-align: start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 14px; line-height: 1.35; transition: border-color .15s, transform .15s; }
+  .quick:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .tile { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
+  .tile svg.lucide { width: 20px; height: 20px; }
+
+  .period-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .period-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); }
+  .task { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+  .task.is-done .task-title { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+  .eyebrow { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .task-title { font-weight: 600; font-size: 15.5px; overflow-wrap: anywhere; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .status.ok { color: var(--ok); }
+  .status.warn { color: var(--warn); }
+  .status svg.lucide { width: 15px; height: 15px; }
+  .confirm-del { font-size: 12.5px; font-weight: 700; color: var(--danger); border: 1px solid var(--danger); border-radius: 9px; padding: 5px 10px; }
+
+  .bar { height: 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s; }
+
+  .field label.lbl { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .input { width: 100%; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 9px 12px; }
+  .input:focus { border-color: var(--accent); outline: none; }
+  .gchip { cursor: pointer; }
+  .gchip input { position: absolute; opacity: 0; pointer-events: none; }
+  .gchip span { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 600; font-size: 13.5px; }
+  .gchip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .gchip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sugg { font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--line); color: var(--muted); }
+  .sugg:hover { border-color: var(--accent); color: var(--ink); }
+  .err { color: var(--danger); font-size: 13px; font-weight: 600; }
+
+  .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(5, 20, 18, .55); display: flex; align-items: flex-end; justify-content: center; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+  @media (min-width: 640px) { .overlay { align-items: center; } }
+  .sheet { width: 100%; max-height: calc(100% - 8px); overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+  .toast { position: fixed; z-index: 60; bottom: max(18px, env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; }
+
+  /* بطاقة الإنفوجرافيك: ألوان ثابتة فاتحة لأنها تُصدَّر وتُطبع */
+  #infographic { width: 760px; background: #ffffff; color: #12302c; font-family: var(--font-body); border-radius: 22px; overflow: hidden; border: 1px solid #d5e2de; }
+  #infographic .ig-head { background: linear-gradient(135deg, #0b6b61 0%, #0f8a7c 60%, #1aa190 100%); color: #ffffff; padding: 28px 32px; display: flex; gap: 24px; align-items: center; justify-content: space-between; }
+  #infographic .ig-title { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.3; }
+  #infographic .ig-sub { font-size: 15px; color: #d8f3ee; }
+  #infographic .ig-body { padding: 24px 32px 8px; display: flex; flex-direction: column; gap: 20px; }
+  #infographic .ig-stats { display: flex; gap: 12px; }
+  #infographic .ig-stat { flex: 1; border-radius: 14px; padding: 12px 16px; background: #f2f8f6; border: 1px solid #dce9e5; }
+  #infographic .ig-stat b { display: block; font-size: 26px; font-family: var(--font-display); line-height: 1.2; }
+  #infographic .ig-stat small { font-size: 13px; color: #5a706c; font-weight: 600; }
+  #infographic .ig-sec-head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 2px solid #e3eeeb; margin-bottom: 10px; }
+  #infographic .ig-sec-head h3 { font-family: var(--font-display); font-weight: 700; font-size: 19px; }
+  #infographic .ig-sec-head small { color: #5a706c; font-size: 13px; font-weight: 600; }
+  #infographic .ig-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: #f8fbfa; border: 1px solid #e6efec; }
+  #infographic .ig-row + .ig-row { margin-top: 8px; }
+  #infographic .ig-row-title { font-weight: 700; font-size: 15px; }
+  #infographic .ig-row-meta { font-size: 12.5px; color: #5a706c; font-weight: 600; }
+  #infographic .ig-pill { display: inline-block; line-height: 1; font-size: 12.5px; font-weight: 700; padding: 8px 12px 9px; border-radius: 999px; white-space: nowrap; }
+  #infographic .ig-foot { margin: 16px 32px 0; padding: 14px 0 22px; border-top: 1px dashed #cfdfda; display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #5a706c; font-weight: 600; }
+  #infographic svg.lucide { width: 20px; height: 20px; }
+  /* أثناء التصدير فقط: html2canvas يرسم النص أدنى قليلاً داخل الشارات */
+  #infographic.capturing .ig-pill { padding: 4px 12px 13px; }
+
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    body { background: #ffffff !important; }
+    body * { visibility: hidden !important; }
+    #infographic, #infographic * { visibility: visible !important; }
+    #infographic { position: absolute; top: 0; right: 0; left: 0; margin: 0 auto; border: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .overlay { position: absolute; background: none; padding: 0; display: block; }
+    .sheet { max-height: none; overflow: visible; border: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div id="app" dir="rtl" lang="ar" class="wrap max-w-6xl mx-auto"></div>
+<div id="modal-root" dir="rtl" lang="ar"></div>
+<div id="toast-root" dir="rtl" lang="ar"></div>
+
+<script>
+document.documentElement.lang = 'ar';
+document.documentElement.dir = 'rtl';
+
+const SCHOOLS = [
+  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء' },
+  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان' },
+];
+const GRADES = { 5: 'الخامس', 6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر', 11: 'الحادي عشر', 12: 'الثاني عشر' };
+const PERIODS = {
+  school: { label: 'الدوام المدرسي', range: '07:10 ص – 01:30 م', icon: 'sun', color: 'var(--accent)', igColor: '#0b7a6e' },
+  after: { label: 'ما بعد الدوام', range: '01:30 م – نهاية اليوم', icon: 'sunset', color: 'var(--after)', igColor: '#a8681a' },
+};
+// grades: single = صف واحد إلزامي، multi = صفوف متعددة إلزامية، optional = صفوف متعددة اختيارية، none = بدون صفوف
+const TYPES = {
+  lecture: { label: 'محاضرة توعوية', icon: 'presentation', color: '#2563eb', grades: 'single', titleLabel: 'عنوان المحاضرة', ph: 'مثال: أضرار الوجبات السريعة' },
+  radio: { label: 'يوم عالمي في الإذاعة', icon: 'radio', color: '#9333ea', grades: 'none', titleLabel: 'عنوان المناسبة', ph: 'مثال: اليوم العالمي لغسل اليدين' },
+  screening: { label: 'الفحص الشامل', icon: 'stethoscope', color: '#0d9488', grades: 'multi', titleLabel: 'تفاصيل الفحص (اختياري)', ph: 'مثال: الطول والوزن وحدة الإبصار', defaultTitle: 'الفحص الشامل' },
+  project: { label: 'مشروع صحي', icon: 'heart-pulse', color: '#e11d48', grades: 'optional', titleLabel: 'اسم المشروع', ph: 'اختر من المقترحات أو اكتب اسم المشروع', suggestions: ['مشروع تعزيز صحة الفم والأسنان', 'مشروع وزنك دليل صحتك'] },
+  vaccine: { label: 'التحصينات واللقاحات', icon: 'syringe', color: '#ea580c', grades: 'optional', titleLabel: 'نوع التحصين', ph: 'مثال: حملة التطعيم الموسمية', defaultTitle: 'التحصينات واللقاحات' },
+  clinic: { label: 'تنظيم غرفة الصحة', icon: 'briefcase-medical', color: '#0891b2', grades: 'none', titleLabel: 'وصف المهمة (اختياري)', ph: 'مثال: جرد الأدوية والمستلزمات', defaultTitle: 'تنظيم غرفة الصحة المدرسية', suggestions: ['جرد الأدوية والمستلزمات', 'تحديث السجلات الصحية للطلاب', 'تعقيم الأدوات والأسطح'] },
+  custom: { label: 'مهمة مخصصة', icon: 'clipboard-list', color: '#64748b', grades: 'optional', titleLabel: 'عنوان المهمة', ph: 'اكتب المهمة' },
+};
+const QUICK_ORDER = ['lecture', 'radio', 'screening', 'project', 'vaccine', 'clinic', 'custom'];
+
+// ---------- التخزين ----------
+const memStore = {};
+const store = {
+  get(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch { return key in memStore ? memStore[key] : fallback; }
+  },
+  set(key, value) {
+    memStore[key] = value;
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  },
+};
+const dayKey = (school, date) => `shp:v1:${school}:${date}`;
+const PREFS_KEY = 'shp:v1:prefs';
+
+// ---------- أدوات التاريخ والوقت ----------
+const pad = n => String(n).padStart(2, '0');
+const toIso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromIso = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = fromIso(s); d.setDate(d.getDate() + n); return toIso(d); };
+const today = () => toIso(new Date());
+const fmtDate = s => new Intl.DateTimeFormat('ar-OM-u-nu-latn-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(fromIso(s));
+function fmtTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const h12 = ((h + 11) % 12) + 1;
+  return `${pad(h12)}:${pad(m)} ${h < 12 ? 'ص' : 'م'}`;
+}
+const periodForTime = t => (t && t >= '13:30' ? 'after' : 'school');
+function relDay(s) {
+  const t = today();
+  if (s === t) return 'اليوم';
+  if (s === addDays(t, 1)) return 'الغد';
+  if (s === addDays(t, -1)) return 'أمس';
+  return '';
+}
+
+// ---------- أدوات عامة ----------
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+const gradeName = g => `الصف ${GRADES[g]}`;
+const typeOf = t => TYPES[t.type] || TYPES.custom;
+const titleOf = t => (t.title && t.title.trim()) || typeOf(t).defaultTitle || typeOf(t).label;
+const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
+function refreshIcons() {
+  if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 } });
+}
+
+// ---------- الحالة ----------
+const prefs = store.get(PREFS_KEY, {});
+const state = {
+  school: SCHOOLS.some(s => s.id === prefs.school) ? prefs.school : SCHOOLS[0].id,
+  date: today(),
+  tasks: [],
+  pendingDelete: null,
+  preparer: prefs.preparer || '',
+};
+function load() { state.tasks = store.get(dayKey(state.school, state.date), []); }
+function save() { store.set(dayKey(state.school, state.date), state.tasks); }
+function savePrefs() { store.set(PREFS_KEY, { school: state.school, preparer: state.preparer }); }
+
+function sortedTasks(period) {
+  return state.tasks
+    .filter(t => t.period === period)
+    .sort((a, b) => (a.time || '99') .localeCompare(b.time || '99') || a.created - b.created);
+}
+function stats() {
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.status === 'done').length;
+  return { total, done, progress: total - done, pct: total ? Math.round((done / total) * 100) : 0 };
+}
+
+// ---------- العرض ----------
+const app = document.getElementById('app');
+
+function render() {
+  const school = SCHOOLS.find(s => s.id === state.school);
+  const s = stats();
+  const rel = relDay(state.date);
+  app.innerHTML = `
+    <header class="flex flex-col gap-4 mb-6">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold muted flex items-center gap-2"><i data-lucide="heart-pulse"></i> الصحة المدرسية · التخطيط اليومي</p>
+          <h1 class="display text-2xl sm:text-3xl font-bold mt-1">${esc(school.name)}</h1>
+        </div>
+      </div>
+      <div class="seg flex-col sm:flex-row" role="tablist" aria-label="اختيار المدرسة">
+        ${SCHOOLS.map(sc => `<button role="tab" aria-selected="${sc.id === state.school}" data-action="school" data-id="${sc.id}" class="${sc.id === state.school ? 'on' : ''} flex items-center justify-center gap-2"><i data-lucide="school"></i>${esc(sc.name)}</button>`).join('')}
+      </div>
+      <div class="card p-3 flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-1">
+          <button class="icon-btn" data-action="day" data-n="-1" aria-label="اليوم السابق"><i data-lucide="chevron-right"></i></button>
+          <button class="icon-btn" data-action="day" data-n="1" aria-label="اليوم التالي"><i data-lucide="chevron-left"></i></button>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="font-bold num">${esc(fmtDate(state.date))}</p>
+          ${rel ? `<p class="text-xs font-semibold" style="color:var(--accent)">${rel}</p>` : ''}
+        </div>
+        <div class="seg">
+          <button data-action="goto" data-d="${today()}" class="${state.date === today() ? 'on' : ''}">اليوم</button>
+          <button data-action="goto" data-d="${addDays(today(), 1)}" class="${state.date === addDays(today(), 1) ? 'on' : ''}">الغد</button>
+        </div>
+        <label class="flex items-center gap-2 text-sm font-semibold muted">
+          <i data-lucide="calendar-days"></i><span class="sr-only">اختيار تاريخ</span>
+          <input id="date-pick" type="date" class="input num" style="width:auto" value="${state.date}">
+        </label>
+      </div>
+    </header>
+
+    <div class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] items-start">
+      <aside class="flex flex-col gap-4 lg:sticky" style="top: calc(env(safe-area-inset-top, 0px) + 16px)">
+        <section class="card p-4">
+          <div class="flex items-baseline justify-between gap-2 mb-2">
+            <h2 class="display text-lg font-bold">نسبة الإنجاز</h2>
+            <span class="display text-2xl font-bold num" style="color:var(--accent)">${s.pct}%</span>
+          </div>
+          <div class="bar" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${s.pct}%"></span></div>
+          <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+            <div><p class="text-xl font-bold num">${s.total}</p><p class="text-xs muted font-semibold">إجمالي المهام</p></div>
+            <div><p class="text-xl font-bold num" style="color:var(--ok)">${s.done}</p><p class="text-xs muted font-semibold">مكتملة</p></div>
+            <div><p class="text-xl font-bold num" style="color:var(--warn)">${s.progress}</p><p class="text-xs muted font-semibold">قيد التنفيذ</p></div>
+          </div>
+          <button class="btn btn-primary w-full justify-center mt-4" data-action="infographic"><i data-lucide="sparkles"></i> إنفوجرافيك التقرير اليومي</button>
+        </section>
+        <section class="card p-4">
+          <h2 class="display text-lg font-bold mb-3">إضافة سريعة</h2>
+          <div class="grid grid-cols-2 lg:grid-cols-1 gap-2">
+            ${QUICK_ORDER.map(k => { const T = TYPES[k]; return `
+              <button class="quick" data-action="add" data-type="${k}">
+                <span class="tile" style="background:${rgba(T.color, .14)};color:${T.color}"><i data-lucide="${T.icon}"></i></span>
+                <span class="min-w-0">${T.label}</span>
+              </button>`; }).join('')}
+          </div>
+        </section>
+      </aside>
+
+      <main class="flex flex-col gap-8 min-w-0">
+        ${['school', 'after'].map(p => periodSection(p)).join('')}
+        ${s.total === 0 ? `
+          <div class="card p-5 text-center flex flex-col items-center gap-3">
+            <p class="font-semibold">لا توجد مهام مسجلة لهذا اليوم في ${esc(school.short)}.</p>
+            <p class="muted text-sm">ابدأ من أزرار الإضافة السريعة، أو حمّل يوماً تجريبياً لترى شكل الجدول.</p>
+            <button class="btn" data-action="sample"><i data-lucide="file-text"></i> تحميل مثال تجريبي</button>
+          </div>` : ''}
+      </main>
+    </div>`;
+  refreshIcons();
+}
+
+function periodSection(p) {
+  const P = PERIODS[p];
+  const list = sortedTasks(p);
+  return `
+    <section aria-labelledby="h-${p}">
+      <div class="period-head mb-3">
+        <span class="tile" style="background:${p === 'school' ? 'var(--surface)' : 'var(--surface)'};color:${P.color};border:1px solid var(--line)"><i data-lucide="${P.icon}"></i></span>
+        <div class="flex-1 min-w-0">
+          <h2 id="h-${p}" class="display text-xl font-bold">${P.label}</h2>
+          <span class="period-badge num"><i data-lucide="clock"></i>${P.range}</span>
+        </div>
+        <button class="btn" data-action="add" data-type="custom" data-period="${p}"><i data-lucide="plus"></i> مهمة</button>
+      </div>
+      ${list.length
+        ? `<ul class="flex flex-col gap-2">${list.map(taskCard).join('')}</ul>`
+        : `<p class="muted text-sm px-4 py-5 rounded-xl" style="border:1px dashed var(--line)">لا توجد مهام في هذه الفترة.</p>`}
+    </section>`;
+}
+
+function taskCard(t) {
+  const T = typeOf(t);
+  const done = t.status === 'done';
+  const grades = (t.grades || []).slice().sort((a, b) => a - b);
+  return `
+    <li class="task ${done ? 'is-done' : ''} flex-wrap sm:flex-nowrap" data-id="${t.id}">
+      <span class="tile" style="background:${rgba(T.color, .14)};color:${T.color}"><i data-lucide="${T.icon}"></i></span>
+      <div class="min-w-0 flex-1" style="flex-basis:180px">
+        <div class="eyebrow"><span style="color:${T.color}">${T.label}</span>${t.time ? `<span class="num">· ${fmtTime(t.time)}</span>` : ''}</div>
+        <p class="task-title">${esc(titleOf(t))}</p>
+        ${grades.length ? `<div class="flex flex-wrap gap-1 mt-1">${grades.map(g => `<span class="chip">${gradeName(g)}</span>`).join('')}</div>` : ''}
+        ${t.note ? `<p class="text-sm muted mt-1" style="overflow-wrap:anywhere">${esc(t.note)}</p>` : ''}
+      </div>
+      <div class="flex items-center gap-1 ms-auto">
+        <button class="status ${done ? 'ok' : 'warn'}" data-action="toggle" title="تبديل الحالة">
+          <i data-lucide="${done ? 'circle-check' : 'hourglass'}"></i>${done ? 'مكتملة' : 'قيد التنفيذ'}
+        </button>
+        <button class="icon-btn" data-action="edit" aria-label="تعديل المهمة"><i data-lucide="pencil"></i></button>
+        ${state.pendingDelete === t.id
+          ? `<button class="confirm-del" data-action="delete-confirm">تأكيد الحذف</button>`
+          : `<button class="icon-btn danger" data-action="delete" aria-label="حذف المهمة"><i data-lucide="trash-2"></i></button>`}
+      </div>
+    </li>`;
+}
+
+// ---------- نافذة الإضافة والتعديل ----------
+const modalRoot = document.getElementById('modal-root');
+let draft = null;
+let formError = '';
+
+function openForm(task) {
+  draft = JSON.parse(JSON.stringify(task));
+  formError = '';
+  renderForm();
+  setTimeout(() => modalRoot.querySelector('#f-title')?.focus(), 30);
+}
+
+function renderForm() {
+  const T = TYPES[draft.type];
+  const isEdit = state.tasks.some(t => t.id === draft.id);
+  const gradeMode = T.grades;
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <form id="task-form" class="sheet max-w-lg p-5 flex flex-col gap-4" novalidate>
+        <div class="flex items-center gap-3">
+          <span class="tile" style="background:${rgba(T.color, .14)};color:${T.color}"><i data-lucide="${T.icon}"></i></span>
+          <h2 class="display text-xl font-bold flex-1">${isEdit ? 'تعديل المهمة' : 'إضافة ' + T.label}</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="f-type">التصنيف</label>
+          <select id="f-type" class="input">
+            ${QUICK_ORDER.map(k => `<option value="${k}" ${k === draft.type ? 'selected' : ''}>${TYPES[k].label}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="f-title">${T.titleLabel}</label>
+          <input id="f-title" class="input" value="${esc(draft.title)}" placeholder="${esc(T.ph)}" autocomplete="off">
+          ${T.suggestions ? `<div class="flex flex-wrap gap-2 mt-2">${T.suggestions.map(s => `<button type="button" class="sugg" data-action="sugg" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
+        </div>
+
+        ${gradeMode !== 'none' ? `
+          <fieldset class="field">
+            <legend class="lbl" style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px">
+              ${gradeMode === 'single' ? 'الصف المستهدف' : gradeMode === 'multi' ? 'الصفوف المستهدفة (يمكن اختيار أكثر من صف)' : 'الصفوف المستهدفة (اختياري)'}
+            </legend>
+            <div class="flex flex-wrap gap-2">
+              ${Object.keys(GRADES).map(g => `
+                <label class="gchip relative">
+                  <input type="${gradeMode === 'single' ? 'radio' : 'checkbox'}" name="grade" value="${g}" ${draft.grades.includes(+g) ? 'checked' : ''}>
+                  <span>${gradeName(g)}</span>
+                </label>`).join('')}
+            </div>
+          </fieldset>` : ''}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="field">
+            <span class="lbl" style="display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px">الفترة</span>
+            <div class="seg">
+              ${['school', 'after'].map(p => `<label><input class="sr-only" type="radio" name="period" value="${p}" ${draft.period === p ? 'checked' : ''}><span>${PERIODS[p].label}</span></label>`).join('')}
+            </div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="f-time">الوقت (اختياري)</label>
+            <input id="f-time" type="time" class="input num" value="${esc(draft.time)}">
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lbl" style="display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px">الحالة</span>
+          <div class="seg">
+            <label><input class="sr-only" type="radio" name="status" value="progress" ${draft.status !== 'done' ? 'checked' : ''}><span>قيد التنفيذ</span></label>
+            <label><input class="sr-only" type="radio" name="status" value="done" ${draft.status === 'done' ? 'checked' : ''}><span>مكتملة</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="f-note">ملاحظات (اختياري)</label>
+          <textarea id="f-note" class="input" rows="2" placeholder="مثال: عدد الطلاب، المكان، المتابعة المطلوبة">${esc(draft.note)}</textarea>
+        </div>
+
+        ${formError ? `<p class="err" role="alert">${formError}</p>` : ''}
+
+        <div class="flex gap-2 justify-end flex-wrap">
+          <button type="button" class="btn" data-action="close">إلغاء</button>
+          <button type="submit" class="btn btn-primary"><i data-lucide="${isEdit ? 'check' : 'plus'}"></i>${isEdit ? 'حفظ التعديلات' : 'إضافة المهمة'}</button>
+        </div>
+      </form>
+    </div>`;
+  refreshIcons();
+}
+
+function readForm() {
+  const f = modalRoot.querySelector('#task-form');
+  if (!f) return;
+  draft.title = f.querySelector('#f-title').value;
+  draft.time = f.querySelector('#f-time').value;
+  draft.note = f.querySelector('#f-note').value;
+  draft.period = (f.querySelector('input[name=period]:checked') || {}).value || 'school';
+  draft.status = (f.querySelector('input[name=status]:checked') || {}).value || 'progress';
+  draft.grades = [...f.querySelectorAll('input[name=grade]:checked')].map(i => +i.value);
+}
+
+function validate() {
+  const T = TYPES[draft.type];
+  if (T.grades === 'single' && draft.grades.length !== 1) return 'اختر الصف المستهدف للمحاضرة.';
+  if (T.grades === 'multi' && draft.grades.length === 0) return 'اختر صفاً واحداً على الأقل للفحص الشامل.';
+  if (!T.defaultTitle && !draft.title.trim()) return `اكتب ${T.titleLabel}.`;
+  return '';
+}
+
+function closeModal() { modalRoot.innerHTML = ''; draft = null; }
+
+modalRoot.addEventListener('change', e => {
+  if (!draft) return;
+  if (e.target.id === 'f-type') {
+    readForm();
+    draft.type = e.target.value;
+    const mode = TYPES[draft.type].grades;
+    if (mode === 'none') draft.grades = [];
+    if (mode === 'single') draft.grades = draft.grades.slice(0, 1);
+    formError = '';
+    renderForm();
+  } else if (e.target.id === 'f-time' && e.target.value) {
+    const p = periodForTime(e.target.value);
+    const radio = modalRoot.querySelector(`input[name=period][value=${p}]`);
+    if (radio) radio.checked = true;
+  }
+});
+
+modalRoot.addEventListener('submit', e => {
+  e.preventDefault();
+  readForm();
+  formError = validate();
+  if (formError) { renderForm(); return; }
+  const t = { ...draft, title: draft.title.trim(), note: draft.note.trim() };
+  const i = state.tasks.findIndex(x => x.id === t.id);
+  if (i >= 0) { state.tasks[i] = t; toast('تم حفظ التعديلات'); }
+  else { state.tasks.push(t); toast('تمت إضافة المهمة'); }
+  save();
+  closeModal();
+  render();
+});
+
+modalRoot.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  const act = a.dataset.action;
+  if (act === 'close-overlay' && e.target !== a) return;
+  if (act === 'close' || act === 'close-overlay') closeModal();
+  if (act === 'sugg') { const inp = modalRoot.querySelector('#f-title'); inp.value = a.dataset.v; inp.focus(); }
+  if (act === 'gen-image') generateImage();
+  if (act === 'print') window.print();
+});
+
+modalRoot.addEventListener('input', e => {
+  if (e.target.id === 'ig-preparer') {
+    state.preparer = e.target.value;
+    savePrefs();
+    const el = modalRoot.querySelector('#ig-preparer-out');
+    if (el) el.textContent = state.preparer.trim() || '—';
+  }
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalRoot.innerHTML) closeModal(); });
+
+// ---------- الإنفوجرافيك ----------
+function ring(pct) {
+  const r = 44, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+  return `
+    <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+      <circle cx="56" cy="56" r="${r}" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="10"></circle>
+      <circle cx="56" cy="56" r="${r}" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 56 56)"></circle>
+      <text x="56" y="62" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="700" font-family="IBM Plex Sans Arabic, Tahoma, sans-serif">${pct}%</text>
+    </svg>`;
+}
+
+// كل جزء من الوقت في عنصر مستقل حتى يحافظ على ترتيبه داخل الصورة المصدّرة
+function igTime(t) {
+  const [hm, ap] = fmtTime(t).split(' ');
+  const [h, m] = hm.split(':');
+  return `<span style="display:inline-flex;direction:ltr;vertical-align:baseline"><span>${h}</span><span>:</span><span>${m}</span></span> ${ap}`;
+}
+
+function infographicHTML() {
+  const school = SCHOOLS.find(s => s.id === state.school);
+  const s = stats();
+  const sec = p => {
+    const P = PERIODS[p];
+    const list = sortedTasks(p);
+    return `
+      <section>
+        <div class="ig-sec-head">
+          <span class="tile" style="background:${rgba(P.igColor, .12)};color:${P.igColor}"><i data-lucide="${P.icon}"></i></span>
+          <h3>${P.label}</h3>
+          <small class="num">${P.range}</small>
+          <small style="margin-inline-start:auto" class="num">${list.filter(t => t.status === 'done').length} من ${list.length} مكتملة</small>
+        </div>
+        ${list.length ? list.map(t => {
+          const T = typeOf(t);
+          const done = t.status === 'done';
+          const grades = (t.grades || []).slice().sort((a, b) => a - b).map(gradeName).join('، ');
+          const meta = [T.label, grades].filter(Boolean).join(' · ');
+          const time = t.time ? ` · ${igTime(t.time)}` : '';
+          return `
+            <div class="ig-row">
+              <span class="tile" style="background:${rgba(T.color, .13)};color:${T.color}"><i data-lucide="${T.icon}"></i></span>
+              <div style="flex:1;min-width:0">
+                <div class="ig-row-title">${esc(titleOf(t))}</div>
+                <div class="ig-row-meta num">${esc(meta)}${time}</div>
+              </div>
+              <span class="ig-pill" style="background:${done ? '#e3f5e9' : '#fdf0dc'};color:${done ? '#15803d' : '#a3540a'}">${done ? 'مكتملة' : 'قيد التنفيذ'}</span>
+            </div>`;
+        }).join('') : `<div class="ig-row" style="color:#5a706c">لا توجد مهام مسجلة في هذه الفترة.</div>`}
+      </section>`;
+  };
+  return `
+    <div id="infographic" dir="rtl" lang="ar">
+      <div class="ig-head">
+        <div style="min-width:0">
+          <div class="ig-sub" style="font-weight:600">التقرير اليومي · الصحة المدرسية</div>
+          <div class="ig-title">${esc(school.name)}</div>
+          <div class="ig-sub num" style="margin-top:4px">${esc(fmtDate(state.date))}</div>
+        </div>
+        ${ring(s.pct)}
+      </div>
+      <div class="ig-body">
+        <div class="ig-stats">
+          <div class="ig-stat"><b class="num">${s.total}</b><small>إجمالي المهام</small></div>
+          <div class="ig-stat"><b class="num" style="color:#15803d">${s.done}</b><small>مهام مكتملة</small></div>
+          <div class="ig-stat"><b class="num" style="color:#a3540a">${s.progress}</b><small>قيد التنفيذ</small></div>
+        </div>
+        ${sec('school')}
+        ${sec('after')}
+      </div>
+      <div class="ig-foot">
+        <span>المعدّ: <span id="ig-preparer-out">${esc(state.preparer.trim() || '—')}</span></span>
+        <span>نسبة الإنجاز <span class="num">${s.pct}%</span></span>
+      </div>
+    </div>`;
+}
+
+function openInfographic() {
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <div class="sheet p-4 sm:p-5 flex flex-col gap-4" style="max-width:840px">
+        <div class="flex items-center gap-3">
+          <h2 class="display text-xl font-bold flex-1">بطاقة التقرير اليومي</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="field flex-1" style="min-width:200px">
+            <label class="lbl" for="ig-preparer">اسم المعدّ (يظهر أسفل البطاقة)</label>
+            <input id="ig-preparer" class="input" value="${esc(state.preparer)}" placeholder="مثال: الممرض الصحي المدرسي">
+          </div>
+          <button class="btn btn-primary" data-action="gen-image"><i data-lucide="image-down"></i> حفظ كصورة</button>
+          ${inFrame ? '' : `<button class="btn" data-action="print"><i data-lucide="printer"></i> طباعة / PDF</button>`}
+        </div>
+        <div id="ig-image-out" hidden></div>
+        <div style="overflow-x:auto;border-radius:22px;background:var(--surface-2);padding:8px">
+          ${infographicHTML()}
+        </div>
+      </div>
+    </div>`;
+  refreshIcons();
+}
+
+async function generateImage() {
+  const card = document.getElementById('infographic');
+  const out = document.getElementById('ig-image-out');
+  if (!card || !window.html2canvas) { toast('تعذر تحميل أداة إنشاء الصور'); return; }
+  // تثبيت لون أيقونات SVG صراحة حتى تظهر بألوانها في الصورة
+  card.querySelectorAll('svg.lucide').forEach(svg => svg.setAttribute('stroke', getComputedStyle(svg).color));
+  toast('جارٍ إنشاء الصورة…');
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    card.classList.add('capturing');
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      .finally(() => card.classList.remove('capturing'));
+    const url = canvas.toDataURL('image/png');
+    const name = `school-health-report-${state.school}-${state.date}.png`;
+    if (!inFrame) {
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('تم حفظ الصورة');
+    }
+    out.hidden = false;
+    out.innerHTML = `
+      <p class="text-sm font-semibold muted mb-2">${inFrame
+        ? 'الصورة جاهزة: اضغط عليها مطولاً (في الجوال) أو انقر بالزر الأيمن واختر «حفظ الصورة».'
+        : 'تم تنزيل الصورة. يمكنك أيضاً حفظ النسخة أدناه يدوياً.'}</p>
+      <img src="${url}" alt="بطاقة التقرير اليومي" style="width:100%;max-width:520px;border-radius:14px;border:1px solid var(--line)">`;
+  } catch (err) {
+    toast('تعذر إنشاء الصورة، حاول مرة أخرى');
+  }
+}
+
+// ---------- الأحداث الرئيسية ----------
+function newTask(type, period) {
+  const T = TYPES[type];
+  return { id: uid(), type, title: '', grades: [], period: period || 'school', time: '', status: 'progress', note: '', created: Date.now() };
+}
+
+app.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  const act = a.dataset.action;
+  const li = a.closest('[data-id]');
+  const id = li && li.matches('li') ? li.dataset.id : null;
+  if (act !== 'delete-confirm' && act !== 'delete') state.pendingDelete = null;
+
+  if (act === 'school') { state.school = a.dataset.id; savePrefs(); load(); render(); }
+  if (act === 'day') { state.date = addDays(state.date, +a.dataset.n); load(); render(); }
+  if (act === 'goto') { state.date = a.dataset.d; load(); render(); }
+  if (act === 'add') openForm(newTask(a.dataset.type, a.dataset.period));
+  if (act === 'infographic') openInfographic();
+  if (act === 'sample') { loadSample(); }
+  if (act === 'toggle' && id) {
+    const t = state.tasks.find(x => x.id === id);
+    t.status = t.status === 'done' ? 'progress' : 'done';
+    save(); render();
+  }
+  if (act === 'edit' && id) openForm(state.tasks.find(x => x.id === id));
+  if (act === 'delete' && id) {
+    state.pendingDelete = id; render();
+    setTimeout(() => { if (state.pendingDelete === id) { state.pendingDelete = null; render(); } }, 4000);
+  }
+  if (act === 'delete-confirm' && id) {
+    state.tasks = state.tasks.filter(x => x.id !== id);
+    state.pendingDelete = null;
+    save(); render(); toast('تم حذف المهمة');
+  }
+});
+
+app.addEventListener('change', e => {
+  if (e.target.id === 'date-pick' && e.target.value) { state.date = e.target.value; load(); render(); }
+});
+
+let toastTimer;
+function toast(msg) {
+  const root = document.getElementById('toast-root');
+  root.innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (root.innerHTML = ''), 2200);
+}
+
+function loadSample() {
+  const mk = (type, o) => ({ ...newTask(type, o.period), ...o, id: uid() });
+  state.tasks = [
+    mk('radio', { title: 'اليوم العالمي لغسل اليدين', time: '07:15', status: 'done', period: 'school' }),
+    mk('lecture', { title: 'التغذية الصحية وأضرار الوجبات السريعة', grades: [8], time: '08:30', status: 'done', period: 'school' }),
+    mk('screening', { title: 'الطول والوزن وحدة الإبصار', grades: [7, 10], time: '09:30', status: 'progress', period: 'school' }),
+    mk('project', { title: 'مشروع تعزيز صحة الفم والأسنان', grades: [5, 6], time: '11:00', status: 'progress', period: 'school' }),
+    mk('clinic', { title: 'جرد الأدوية والمستلزمات', time: '12:30', status: 'progress', period: 'school' }),
+    mk('custom', { title: 'إدخال نتائج الفحص الشامل في النظام', time: '14:00', status: 'progress', period: 'after' }),
+  ];
+  save(); render(); toast('تم تحميل يوم تجريبي، يمكنك تعديله أو حذفه');
+}
+
+load();
+render();
+window.addEventListener('load', () => refreshIcons());
+</script>
+</body>
+</html>
