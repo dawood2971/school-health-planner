@@ -52,6 +52,9 @@
   .hero-cta { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 22px; border-radius: 999px; font-weight: 700; font-size: 15px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 16px rgba(5, 150, 105, .26); transition: transform .15s, box-shadow .15s; }
   .hero-cta:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(5, 150, 105, .32); }
   .hero-cta svg.lucide { width: 18px; height: 18px; }
+  .hero-side { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+  .clock { direction: ltr; display: inline-flex; align-items: baseline; gap: 3px; padding: 3px 14px; border-radius: 999px; background: rgba(255,255,255,.8); border: 1px solid #d3ebe5; font-family: "Cairo", var(--font); font-weight: 800; font-size: 20px; line-height: 1.4; color: #0b5f58; }
+  .clock small { font-size: 13px; font-weight: 700; color: var(--gold); }
   .compass { position: relative; z-index: 1; flex-shrink: 0; width: clamp(118px, 30vw, 168px); height: auto; filter: drop-shadow(0 8px 16px rgba(15, 118, 110, .18)); }
   .compass .needle { transform-origin: 100px 100px; animation: seek 3.2s cubic-bezier(.3, .7, .3, 1) both, sway 6s ease-in-out 3.2s infinite; }
   @keyframes seek { 0% { transform: rotate(-140deg); } 35% { transform: rotate(38deg); } 55% { transform: rotate(-22deg); } 72% { transform: rotate(12deg); } 86% { transform: rotate(-5deg); } 100% { transform: rotate(0deg); } }
@@ -368,6 +371,15 @@ const COMPASS_SVG = `<svg class="compass" viewBox="0 0 200 200" aria-hidden="tru
   <circle cx="100" cy="100" r="8" fill="url(#cg-ring)" stroke="#fff" stroke-width="2"/>
 </svg>`;
 
+// ساعة بنظام 24 ساعة تحت البوصلة
+const pad2 = n => String(n).padStart(2, '0');
+const clockText = () => { const d = new Date(); return { hm: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`, s: `:${pad2(d.getSeconds())}` }; };
+setInterval(() => {
+  const hm = document.getElementById('clock-hm'), sec = document.getElementById('clock-s');
+  if (!hm) return;
+  const t = clockText(); if (hm.textContent !== t.hm) hm.textContent = t.hm; sec.textContent = t.s;
+}, 1000);
+
 // الترحيب وعبارة اليوم
 const OWNER = 'داود اليعقوبي';
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'صباح الخير' : 'مساء الخير'; };
@@ -529,7 +541,10 @@ function render() {
           <h1>بوصلة</h1>
           <button class="hero-cta" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
         </div>
-        ${COMPASS_SVG}
+        <div class="hero-side">
+          ${COMPASS_SVG}
+          <div class="clock num" dir="ltr" aria-label="الوقت الآن"><span id="clock-hm">${clockText().hm}</span><small id="clock-s">${clockText().s}</small></div>
+        </div>
       </section>
 
       <nav class="actions" aria-label="الإجراءات السريعة">
