@@ -1156,14 +1156,27 @@ function openInfographic(kind = 'day') {
             <button data-action="wk-style" data-v="table" class="${weekStyle === 'table' ? 'on' : ''}">جدول</button>
           </div>` : ''}
         <div id="ig-image-out" hidden></div>
-        <div style="overflow-x:auto;border-radius:22px;background:var(--column);padding:8px">
-          ${kind === 'week' ? (weekStyle === 'poster' ? weekPosterHTML() : weekReportHTML()) : infographicHTML()}
+        <div id="ig-frame" style="overflow:hidden;border-radius:22px;background:var(--column);padding:8px">
+          <div id="ig-scale" style="transform-origin:top right">
+            ${kind === 'week' ? (weekStyle === 'poster' ? weekPosterHTML() : weekReportHTML()) : infographicHTML()}
+          </div>
         </div>
       </div>
     </div>`;
   refreshIcons();
+  fitPreview();
   prerender();
 }
+
+// تصغير المعاينة لتناسب عرض الشاشة؛ الصورة المحفوظة تبقى بحجمها الكامل
+function fitPreview() {
+  const frame = document.getElementById('ig-frame'), box = document.getElementById('ig-scale'), card = document.getElementById('infographic');
+  if (!frame || !box || !card) return;
+  box.style.transform = ''; box.style.height = '';
+  const k = Math.min(1, (frame.clientWidth - 16) / card.offsetWidth);
+  if (k < 1) { box.style.transform = `scale(${k})`; box.style.height = `${card.offsetHeight * k}px`; }
+}
+window.addEventListener('resize', fitPreview);
 
 // نجهّز الصورة في الخلفية فور فتح نافذة التصدير، فيكون الحفظ فورياً عند الضغط
 let rendered = null, renderTimer = 0;
@@ -1178,7 +1191,8 @@ async function renderCard() {
   card.querySelectorAll('svg.lucide').forEach(svg => svg.setAttribute('stroke', getComputedStyle(svg).color));
   if (document.fonts && document.fonts.ready) await document.fonts.ready;
   card.classList.add('capturing');
-  const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+  const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false,
+    onclone: doc => { const box = doc.getElementById('ig-scale'); if (box) { box.style.transform = 'none'; box.style.height = 'auto'; } } })
     .finally(() => card.classList.remove('capturing'));
   const blob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('blob')), 'image/png'));
   return { card, blob, url: URL.createObjectURL(blob) };
