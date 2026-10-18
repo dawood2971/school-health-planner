@@ -1,4 +1,4 @@
-<title>مخطط الصحة المدرسية</title>
+<title>بوصلة</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,14 +11,18 @@
      تصميم فاتح بالكامل بناءً على طلب المستخدم (خلفية فاتحة نظيفة). */
   :root {
     color-scheme: light;
-    --bg: #f6f7f9;
+    --bg: #f8fafc;
     --surface: #ffffff;
-    --column: #eef1f4;
-    --ink: #1c2733;
-    --muted: #66727f;
-    --line: #e2e6eb;
-    --accent: #0b7a6e;
-    --accent-soft: #e3f3f0;
+    --column: #f1f5f9;
+    --ink: #1e293b;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --accent: #0f766e;
+    --accent-2: #059669;
+    --accent-soft: #e6f4f1;
+    --gold: #d99a1e;
+    --gold-soft: #fdf5e3;
+    --gold-ink: #8a5a00;
     --accent-ink: #ffffff;
     --ok: #15803d;
     --danger: #c0392b;
@@ -32,9 +36,54 @@
   .num { font-variant-numeric: tabular-nums; }
   svg.lucide { width: 18px; height: 18px; flex-shrink: 0; }
 
-  .daily { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; background: var(--accent-soft); color: #075e55; font-weight: 600; border: 1px solid #cbe8e2; }
-  .daily svg.lucide { width: 20px; height: 20px; color: var(--accent); }
-  .daily small { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
+  /* هوية «بوصلة»: أخضر زيتي أساسي، ذهبي ناعم ثانوي، خلفية رمادية فاتحة */
+  .hero { position: relative; overflow: hidden; border-radius: 24px; padding: 22px 22px 24px; color: #fff; background: linear-gradient(140deg, #0b5f58 0%, #0f766e 55%, #129a7f 100%); box-shadow: 0 10px 30px rgba(15, 118, 110, .22); }
+  .hero::after { content: ""; position: absolute; inset-inline-end: -60px; top: -70px; width: 220px; height: 220px; border-radius: 999px; background: radial-gradient(circle, rgba(255,255,255,.16), rgba(255,255,255,0) 70%); pointer-events: none; }
+  .hero-mark { position: absolute; inset-inline-end: 18px; bottom: -26px; color: rgba(255,255,255,.09); pointer-events: none; }
+  .hero-mark svg.lucide { width: 150px; height: 150px; stroke-width: 1.2; }
+  .hero-date { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.14); }
+  .hero-date svg.lucide { width: 15px; height: 15px; }
+  .hero-greet { margin-top: 14px; font-weight: 600; color: #fde7b0; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-top: 2px; }
+  .brand-logo { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 16px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); flex-shrink: 0; }
+  .brand-logo svg.lucide { width: 28px; height: 28px; color: #fde7b0; }
+  .brand h1 { font-family: "Cairo", var(--font); font-weight: 900; font-size: 34px; line-height: 1.15; }
+  .brand p { font-size: 14.5px; font-weight: 500; color: #d3f0ea; }
+
+  .actions { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .actions .cta { grid-column: 1 / -1; }
+  @media (min-width: 720px) { .actions { grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr)); } .actions .cta { grid-column: auto; } }
+  .cta { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 58px; border-radius: 16px; font-weight: 700; font-size: 16px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 18px rgba(5, 150, 105, .28); transition: transform .15s, box-shadow .15s; }
+  .cta:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(5, 150, 105, .32); }
+  .cta .cta-ic { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: rgba(255,255,255,.2); }
+  .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 58px; padding: 10px 6px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); font-weight: 600; font-size: 13.5px; text-align: center; line-height: 1.3; transition: border-color .15s, transform .15s; }
+  .tile:hover { border-color: #b9dcd5; transform: translateY(-1px); }
+  .tile svg.lucide { width: 20px; height: 20px; color: var(--accent); }
+  @media (min-width: 720px) { .tile { flex-direction: row; } }
+
+  .quote { position: relative; display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); border-inline-start: 4px solid var(--gold); box-shadow: var(--shadow); }
+  .quote-ic { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: var(--gold-soft); color: var(--gold); flex-shrink: 0; }
+  .quote-ic svg.lucide { width: 20px; height: 20px; }
+  .quote small { display: block; font-size: 12px; font-weight: 700; color: var(--gold-ink); letter-spacing: .02em; }
+  .quote p { font-weight: 600; font-size: 15.5px; line-height: 1.6; }
+
+  .tabs { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; border-radius: 16px; background: var(--surface); border: 1.5px solid var(--line); color: var(--muted); text-align: center; line-height: 1.3; transition: border-color .15s, background .15s, color .15s; }
+  .tab:hover { border-color: #b9dcd5; color: var(--ink); }
+  .tab svg.lucide { width: 22px; height: 22px; }
+  .tab span { display: flex; flex-direction: column; }
+  .tab b { font-size: 14px; color: inherit; }
+  .tab small { font-size: 11.5px; font-weight: 600; opacity: .8; }
+  .tab.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 3px rgba(15, 118, 110, .08); }
+  .tab.on b { color: #0b5f58; }
+  @media (min-width: 720px) { .tab { flex-direction: row; justify-content: center; gap: 10px; text-align: start; } }
+
+  .progress-card { padding: 18px; }
+  .progress-card .pct { font-family: "Cairo", var(--font); font-size: 30px; font-weight: 900; line-height: 1; color: var(--gold-ink); }
+  .bar.gold > span { background: linear-gradient(90deg, #f0b84a, var(--gold)); }
+  .bar.full > span { background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+  .badge-done { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 14px; border-radius: 14px; background: var(--gold-soft); color: var(--gold-ink); font-weight: 700; font-size: 14px; }
+  .badge-done svg.lucide { width: 22px; height: 22px; color: var(--gold); }
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border-radius: 12px; padding: 8px 16px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); transition: background .15s, border-color .15s, box-shadow .15s; }
   .btn:hover { border-color: #c7ced6; box-shadow: var(--shadow); }
@@ -52,7 +101,7 @@
   .seg label span { display: block; padding: 8px 12px; border-radius: 9px; }
   .seg .on, .seg input:checked + span { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 
-  .bar { height: 10px; border-radius: 999px; background: var(--column); overflow: hidden; }
+  .bar { height: 12px; border-radius: 999px; background: var(--column); overflow: hidden; }
   .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s ease; }
 
   .quick { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 13.5px; transition: border-color .15s, box-shadow .15s; }
@@ -240,10 +289,10 @@ document.documentElement.lang = 'ar';
 document.documentElement.dir = 'rtl';
 
 const SCHOOLS = [
-  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء', tag: 'أبو الدرداء', grades: [5, 6, 7, 8, 9, 10, 11, 12] },
-  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان', tag: 'سيف بن سلطان', grades: [11, 12] },
+  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء', tab: 'أبو الدرداء', caption: 'التعليم الأساسي', tag: 'أبو الدرداء', grades: [5, 6, 7, 8, 9, 10, 11, 12] },
+  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان', tab: 'سيف بن سلطان', caption: 'للبنين', tag: 'سيف بن سلطان', grades: [11, 12] },
   // برنامج وليس مدرسة: بلا صفوف دراسية
-  { id: 'school-uni-program', name: 'برنامج الصحة المدرسية والجامعية', short: 'برنامج الصحة المدرسية والجامعية', tag: 'البرنامج', grades: [], program: true },
+  { id: 'school-uni-program', name: 'برنامج الصحة المدرسية والجامعية', short: 'برنامج الصحة المدرسية والجامعية', tab: 'البرنامج', caption: 'المدرسية والجامعية', tag: 'البرنامج', grades: [], program: true },
 ];
 const GRADES = { 5: 'الخامس', 6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر', 11: 'الحادي عشر', 12: 'الثاني عشر' };
 const COLUMNS = {
@@ -434,35 +483,43 @@ function render() {
   const school = SCHOOLS.find(s => s.id === state.school);
   const s = stats();
   app.innerHTML = `
-    <header class="flex flex-col gap-5">
-      <div class="flex flex-wrap items-end justify-between gap-4">
-        <div class="min-w-0">
-          <p class="text-sm font-semibold muted flex items-center gap-2 num"><i data-lucide="calendar-days"></i>${esc(fmtLong(today()))}</p>
-          <p class="font-bold mt-1" style="color:var(--accent)">${greeting()} يا ${OWNER}، أهلاً بك</p>
-          <h1 class="text-2xl sm:text-3xl font-bold">مهامي اليومية</h1>
-          <p class="muted font-medium">${esc(school.name)}</p>
+    <header class="flex flex-col gap-4">
+      <section class="hero">
+        <span class="hero-mark" aria-hidden="true"><i data-lucide="compass"></i></span>
+        <span class="hero-date num"><i data-lucide="calendar-days"></i>${esc(fmtLong(today()))}</span>
+        <p class="hero-greet">${greeting()} يا ${OWNER}، أهلاً بك</p>
+        <div class="brand">
+          <span class="brand-logo"><i data-lucide="compass"></i></span>
+          <div><h1>بوصلة</h1><p>برنامج الصحة المدرسية والجامعية</p></div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button class="btn" data-action="backup"><i data-lucide="database-backup"></i>نقل البيانات</button>
-          <button class="btn" data-action="lock-menu" aria-label="قفل التطبيق"><i data-lucide="lock"></i>${hasPin() ? 'قفل' : 'حماية برمز'}</button>
-          <button class="btn" data-action="infographic"><i data-lucide="chart-pie"></i>تقرير اليوم</button>
-          <button class="btn btn-primary" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
-        </div>
+      </section>
+
+      <nav class="actions" aria-label="الإجراءات السريعة">
+        <button class="cta" data-action="add" data-type="custom"><span class="cta-ic"><i data-lucide="plus"></i></span>إضافة مهمة</button>
+        <button class="tile" data-action="infographic"><i data-lucide="chart-pie"></i>تقرير اليوم</button>
+        <button class="tile" data-action="backup"><i data-lucide="database-backup"></i>نقل البيانات</button>
+        <button class="tile" data-action="lock-menu" aria-label="قفل التطبيق"><i data-lucide="${hasPin() ? 'lock' : 'shield-check'}"></i>${hasPin() ? 'قفل' : 'حماية برمز'}</button>
+      </nav>
+
+      <figure class="quote">
+        <span class="quote-ic"><i data-lucide="quote"></i></span>
+        <figcaption><small>عبارة اليوم</small><p>${esc(dailyWord())}</p></figcaption>
+      </figure>
+
+      <div class="tabs" role="tablist" aria-label="اختيار المدرسة أو البرنامج">
+        ${SCHOOLS.map(sc => `<button role="tab" aria-selected="${sc.id === state.school}" data-action="school" data-id="${sc.id}" class="tab ${sc.id === state.school ? 'on' : ''}" title="${esc(sc.name)}"><i data-lucide="${sc.program ? 'graduation-cap' : 'school'}"></i><span><b>${esc(sc.tab)}</b><small>${esc(sc.caption)}</small></span></button>`).join('')}
       </div>
 
-      <div class="daily" role="note"><i data-lucide="sparkles"></i><div><small>عبارة اليوم</small>${esc(dailyWord())}</div></div>
-
-      <div class="seg grid grid-cols-1 sm:grid-cols-2" role="tablist" aria-label="اختيار المدرسة أو البرنامج">
-        ${SCHOOLS.map(sc => `<button role="tab" aria-selected="${sc.id === state.school}" data-action="school" data-id="${sc.id}" class="${sc.id === state.school ? 'on' : ''} ${sc.program ? 'sm:col-span-2' : ''}">${esc(sc.name)}</button>`).join('')}
-      </div>
-
-      <section class="panel p-4 sm:p-5" aria-label="نسبة إنجاز مهام اليوم">
-        <div class="flex items-baseline justify-between gap-3 flex-wrap mb-3">
-          <h2 class="font-bold">نسبة إنجاز مهام اليوم</h2>
-          <p class="muted text-sm font-semibold num">${s.total ? `أنجزت ${s.done} من ${s.total}` : 'لا توجد مهام مستحقة اليوم'}
-            <span class="text-xl font-bold ms-2" style="color:var(--accent)">${s.pct}%</span></p>
+      <section class="panel progress-card" aria-label="نسبة إنجاز مهام اليوم">
+        <div class="flex items-end justify-between gap-3 flex-wrap mb-3">
+          <div>
+            <h2 class="font-bold">نسبة إنجاز مهام اليوم</h2>
+            <p class="muted text-sm font-semibold num">${esc(school.name)} · ${s.total ? `أنجزت ${s.done} من ${s.total}` : 'لا توجد مهام مستحقة اليوم'}</p>
+          </div>
+          <span class="pct num" ${s.total && s.pct === 100 ? 'style="color:var(--accent)"' : ''}>${s.pct}%</span>
         </div>
-        <div class="bar" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${s.pct}%"></span></div>
+        <div class="bar ${s.total && s.pct === 100 ? 'full' : 'gold'}" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${s.pct}%"></span></div>
+        ${s.total && s.pct === 100 ? `<div class="badge-done"><i data-lucide="party-popper"></i>أحسنت يا داود! أنجزت كل مهام اليوم.</div>` : ''}
       </section>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -1258,8 +1315,9 @@ function showLock(err = '') {
   lockRoot.innerHTML = `
     <div class="lock">
       <form id="lock-form" class="lock-card" novalidate>
-        <span style="color:var(--accent);display:grid;place-items:center"><i data-lucide="lock-keyhole" style="width:40px;height:40px"></i></span>
-        <h1 class="text-2xl font-bold">أهلاً ${OWNER}</h1>
+        <span style="color:var(--accent);display:grid;place-items:center"><i data-lucide="compass" style="width:44px;height:44px"></i></span>
+        <h1 class="text-2xl font-bold" style="font-family:Cairo,var(--font)">بوصلة</h1>
+        <p class="font-semibold" style="color:var(--accent)">أهلاً ${OWNER}</p>
         <p class="muted">أدخل الرمز السري لفتح مهامك اليومية.</p>
         <input id="lock-pin" class="input pin num" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-label="الرمز السري">
         ${err ? `<p class="err" role="alert">${err}</p>` : ''}
