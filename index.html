@@ -156,10 +156,10 @@
   #infographic .ig-foot { margin: 16px 32px 0; padding: 14px 0 22px; border-top: 1px dashed #d5dbe1; display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #66727f; font-weight: 600; }
   #infographic .tile { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
   #infographic svg.lucide { width: 20px; height: 20px; }
-  #infographic.ig-week { width: 900px; }
-  #infographic .wk-grid { display: grid; grid-template-columns: 130px 1fr 1fr; border: 1px solid #e2e6eb; border-radius: 14px; overflow: hidden; }
+  #infographic.ig-week { width: 1040px; }
+  #infographic .wk-grid { display: grid; border: 1px solid #e2e6eb; border-radius: 14px; overflow: hidden; }
   #infographic .wk-grid > div { padding: 10px 12px; border-bottom: 1px solid #eef1f4; }
-  #infographic .wk-grid > div:nth-child(3n+2), #infographic .wk-grid > div:nth-child(3n+3) { border-inline-start: 1px solid #eef1f4; }
+  #infographic .wk-grid > .wk-th + .wk-th, #infographic .wk-grid > .wk-cell { border-inline-start: 1px solid #eef1f4; }
   #infographic .wk-th { background: #0b7a6e; color: #ffffff; font-weight: 700; font-size: 14px; }
   #infographic .wk-day { background: #f4f6f8; display: flex; flex-direction: column; }
   #infographic .wk-day b { font-size: 15px; }
@@ -201,6 +201,8 @@ document.documentElement.dir = 'rtl';
 const SCHOOLS = [
   { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء', grades: [5, 6, 7, 8, 9, 10, 11, 12] },
   { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان', grades: [11, 12] },
+  // برنامج وليس مدرسة: بلا صفوف دراسية
+  { id: 'school-uni-program', name: 'برنامج الصحة المدرسية والجامعية', short: 'برنامج الصحة المدرسية والجامعية', grades: [], program: true },
 ];
 const GRADES = { 5: 'الخامس', 6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر', 11: 'الحادي عشر', 12: 'الثاني عشر' };
 const COLUMNS = {
@@ -364,8 +366,8 @@ function render() {
         </div>
       </div>
 
-      <div class="seg flex-col sm:flex-row" role="tablist" aria-label="اختيار المدرسة">
-        ${SCHOOLS.map(sc => `<button role="tab" aria-selected="${sc.id === state.school}" data-action="school" data-id="${sc.id}" class="${sc.id === state.school ? 'on' : ''}">${esc(sc.name)}</button>`).join('')}
+      <div class="seg grid grid-cols-1 sm:grid-cols-2" role="tablist" aria-label="اختيار المدرسة أو البرنامج">
+        ${SCHOOLS.map(sc => `<button role="tab" aria-selected="${sc.id === state.school}" data-action="school" data-id="${sc.id}" class="${sc.id === state.school ? 'on' : ''} ${sc.program ? 'sm:col-span-2' : ''}">${esc(sc.name)}</button>`).join('')}
       </div>
 
       <section class="panel p-4 sm:p-5" aria-label="نسبة إنجاز مهام اليوم">
@@ -514,7 +516,7 @@ function openForm(task) {
 function renderForm() {
   const T = TYPES[draft.type];
   const isEdit = state.tasks.some(t => t.id === draft.id);
-  const mode = T.grades;
+  const mode = schoolGrades().length ? T.grades : 'none';
   const statuses = isEdit ? ['today', 'progress', 'done'] : ['today', 'progress'];
   modalRoot.innerHTML = `
     <div class="overlay" data-action="close-overlay">
@@ -630,8 +632,9 @@ function readForm() {
 function validate() {
   const T = TYPES[draft.type];
   if (!T.defaultTitle && !draft.title.trim()) return `اكتب ${T.titleLabel.replace(' (اختياري)', '')}.`;
-  if (T.grades === 'single' && draft.grades.length !== 1) return 'اختر الصف المستهدف للمحاضرة.';
-  if (T.grades === 'multi' && draft.grades.length === 0) return 'اختر صفاً واحداً على الأقل للفحص الشامل.';
+  const noGrades = !schoolGrades().length;
+  if (!noGrades && T.grades === 'single' && draft.grades.length !== 1) return 'اختر الصف المستهدف للمحاضرة.';
+  if (!noGrades && T.grades === 'multi' && draft.grades.length === 0) return 'اختر صفاً واحداً على الأقل للفحص الشامل.';
   if (!draft.due) return 'اختر تاريخ الاستحقاق.';
   return '';
 }
@@ -668,7 +671,7 @@ function weekReportHTML() {
       <div class="ig-head">
         <div style="min-width:0">
           <div class="ig-sub" style="font-weight:600">الخطة الأسبوعية · الصحة المدرسية</div>
-          <div class="ig-title">جدول الأسبوع للمدرستين</div>
+          <div class="ig-title">جدول الأسبوع للمدرستين والبرنامج</div>
           <div class="ig-sub num" style="margin-top:4px">${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[6]))} ${fromIso(days[6]).getFullYear()}</div>
         </div>
         <div style="text-align:center;flex-shrink:0">
@@ -677,7 +680,7 @@ function weekReportHTML() {
         </div>
       </div>
       <div class="ig-body">
-        <div class="wk-grid">
+        <div class="wk-grid" style="grid-template-columns: 120px repeat(${data.length}, minmax(0, 1fr))">
           <div class="wk-th">اليوم</div>
           ${data.map(sc => `<div class="wk-th">${esc(sc.name)}</div>`).join('')}
           ${shown.map(d => `
@@ -867,7 +870,7 @@ function openInfographic(kind = 'day') {
     <div class="overlay" data-action="close-overlay">
       <div class="sheet p-4 sm:p-6 flex flex-col gap-4" style="max-width:840px">
         <div class="flex items-center gap-3">
-          <h2 class="text-xl font-bold flex-1">${kind === 'week' ? 'جدول الأسبوع للمدرستين' : 'تقرير اليوم'}</h2>
+          <h2 class="text-xl font-bold flex-1">${kind === 'week' ? 'جدول الأسبوع للمدرستين والبرنامج' : 'تقرير اليوم'}</h2>
           <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
         </div>
         <div class="flex flex-wrap items-end gap-3">
