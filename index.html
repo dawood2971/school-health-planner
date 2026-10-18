@@ -94,7 +94,7 @@
   .week-grid { display: grid; gap: 10px; grid-template-columns: 1fr; align-items: start; }
   @media (min-width: 640px) { .week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (min-width: 900px) { .week-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  @media (min-width: 1180px) { .week-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+  @media (min-width: 1180px) { .week-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
   .witem { display: flex; align-items: flex-start; gap: 8px; background: var(--surface); border-radius: 10px; padding: 8px 9px; box-shadow: var(--shadow); }
   .witem .check { width: 20px; height: 20px; border-radius: 6px; }
   .witem .check svg.lucide { width: 13px; height: 13px; }
@@ -112,7 +112,6 @@
   .dchip:hover { border-color: #c7ced6; }
   .dchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .dchip.on small { color: #d8f3ee; }
-  .dchip.wknd { opacity: .6; }
   .confirm-del { font-size: 12.5px; font-weight: 700; color: var(--danger); background: #fdecec; border-radius: 9px; padding: 5px 10px; }
 
   .lbl { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
@@ -309,10 +308,10 @@ const fmtDay = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'num
 const fmtWeekday = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long' }).format(fromIso(s));
 const fmtDayMonth = s => new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long' }).format(fromIso(s));
 const diffDays = (a, b) => Math.round((fromIso(b) - fromIso(a)) / 86400000);
-const isWeekend = s => [5, 6].includes(fromIso(s).getDay()); // الجمعة والسبت
 // بداية الأسبوع (الأحد) مع إزاحة بالأسابيع
-const weekStart = (offset = 0) => addDays(today(), -fromIso(today()).getDay() + 7 * offset);
-const weekDays = offset => Array.from({ length: 7 }, (_, i) => addDays(weekStart(offset), i));
+// أسبوع الدوام من الأحد إلى الخميس؛ في الجمعة والسبت يكون «هذا الأسبوع» هو الأسبوع القادم
+const weekStart = (offset = 0) => { const g = fromIso(today()).getDay(); return addDays(today(), -g + (g >= 5 ? 7 : 0) + 7 * offset); };
+const weekDays = offset => Array.from({ length: 5 }, (_, i) => addDays(weekStart(offset), i));
 const weekOf = d => Math.floor(diffDays(weekStart(0), d) / 7);
 function fmtTime(t) {
   const [h, m] = t.split(':').map(Number);
@@ -466,10 +465,10 @@ function column(key) {
 
 let weekOffset = 0;
 
-// خطة الأسبوع: الأسبوع كاملاً من الأحد إلى السبت، بكل مهام كل يوم
+// خطة الأسبوع: الأسبوع كاملاً من الأحد إلى الخميس، بكل مهام كل يوم
 function upcomingSection() {
   const days = weekDays(weekOffset);
-  const start = days[0], end = days[6];
+  const start = days[0], end = days[4];
   const byDay = d => state.tasks.filter(t => t.due === d)
     .sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
   const shown = days;
@@ -654,8 +653,8 @@ function dayStrip() {
   return `
     <div class="flex items-center gap-1">
       <button type="button" class="icon-btn" data-action="fweek" data-n="-1" aria-label="الأسبوع السابق"><i data-lucide="chevron-right"></i></button>
-      <div class="grid grid-cols-4 sm:grid-cols-7 gap-1.5 flex-1">
-        ${days.map(d => `<button type="button" class="dchip ${d === due ? 'on' : ''} ${isWeekend(d) ? 'wknd' : ''}" data-action="day-pick" data-d="${d}"><b>${label(d)}</b><small class="num">${esc(fmtDayMonth(d))}</small></button>`).join('')}
+      <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5 flex-1">
+        ${days.map(d => `<button type="button" class="dchip ${d === due ? 'on' : ''}" data-action="day-pick" data-d="${d}"><b>${label(d)}</b><small class="num">${esc(fmtDayMonth(d))}</small></button>`).join('')}
       </div>
       <button type="button" class="icon-btn" data-action="fweek" data-n="1" aria-label="الأسبوع التالي"><i data-lucide="chevron-left"></i></button>
     </div>`;
@@ -697,16 +696,16 @@ function weekPosterHTML() {
   const done = all.filter(t => t.status === 'done').length;
   const pct = all.length ? Math.round((done / all.length) * 100) : 0;
   const byDay = d => all.filter(t => t.due === d).sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank);
-  const shown = days.filter(d => !isWeekend(d) || byDay(d).length);
+  const shown = days;
   const busiest = shown.reduce((m, d) => byDay(d).length > byDay(m).length ? d : m, shown[0]);
   const prio = Object.entries(PRIORITIES).map(([k, P]) => ({ ...P, n: all.filter(t => (t.priority || 'normal') === k).length }));
   const types = TYPE_ORDER.map(k => ({ k, T: TYPES[k], n: all.filter(t => (t.type || 'custom') === k).length })).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 6);
   const top = all.filter(t => t.status !== 'done').sort((a, b) => prioOf(a).rank - prioOf(b).rank || a.due.localeCompare(b.due))[0];
   const gradesAll = [...new Set(all.flatMap(t => t.grades || []))].sort((a, b) => a - b);
-  const y = fromIso(days[6]).getFullYear();
+  const y = fromIso(days[4]).getFullYear();
   return `
     <div id="infographic" class="poster" dir="rtl" lang="ar">
-      <div class="p-kicker">الصحة المدرسية · ${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[6]))} ${y}</div>
+      <div class="p-kicker">الصحة المدرسية · ${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[4]))} ${y}</div>
       <div class="p-title">خطة <span>الأسبوع</span></div>
       <div class="p-sub">مدرستا أبو الدرداء والإمام سيف بن سلطان، وبرنامج الصحة المدرسية والجامعية</div>
       <div class="p-rule" style="margin:18px 0 22px"></div>
@@ -799,7 +798,7 @@ function weekReportHTML() {
   const data = SCHOOLS.map(sc => ({ ...sc, tasks: sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), []) }));
   const forDay = (sc, d) => sc.tasks.filter(t => t.due === d)
     .sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
-  const shown = days.filter(d => !isWeekend(d) || data.some(sc => forDay(sc, d).length));
+  const shown = days;
   const all = data.flatMap(sc => sc.tasks.filter(t => days.includes(t.due)));
   const done = all.filter(t => t.status === 'done').length;
   const cell = (sc, d) => {
@@ -824,7 +823,7 @@ function weekReportHTML() {
         <div style="min-width:0">
           <div class="ig-sub" style="font-weight:600">الخطة الأسبوعية · الصحة المدرسية</div>
           <div class="ig-title">جدول الأسبوع للمدرستين والبرنامج</div>
-          <div class="ig-sub num" style="margin-top:4px">${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[6]))} ${fromIso(days[6]).getFullYear()}</div>
+          <div class="ig-sub num" style="margin-top:4px">${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[4]))} ${fromIso(days[4]).getFullYear()}</div>
         </div>
         <div style="text-align:center;flex-shrink:0">
           <div style="font-size:34px;font-weight:700;line-height:1.1" class="num">${all.length}</div>

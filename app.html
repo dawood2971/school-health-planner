@@ -1,0 +1,1335 @@
+<title>مخطط الصحة المدرسية</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  /* Layout: رأس (العنوان، التاريخ، التقدم، الإضافة) ثم لوحة بثلاثة أعمدة: مهام اليوم / قيد التنفيذ / منجزة.
+     تصميم فاتح بالكامل بناءً على طلب المستخدم (خلفية فاتحة نظيفة). */
+  :root {
+    color-scheme: light;
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --column: #eef1f4;
+    --ink: #1c2733;
+    --muted: #66727f;
+    --line: #e2e6eb;
+    --accent: #0b7a6e;
+    --accent-soft: #e3f3f0;
+    --accent-ink: #ffffff;
+    --ok: #15803d;
+    --danger: #c0392b;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 2px 6px rgba(16, 24, 40, .06);
+    --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.6; }
+  .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 56px; }
+  h1, h2, h3 { text-wrap: balance; }
+  .muted { color: var(--muted); }
+  .num { font-variant-numeric: tabular-nums; }
+  svg.lucide { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border-radius: 12px; padding: 8px 16px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); transition: background .15s, border-color .15s, box-shadow .15s; }
+  .btn:hover { border-color: #c7ced6; box-shadow: var(--shadow); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn-primary:hover { background: #096b60; border-color: #096b60; }
+  .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .icon-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: var(--muted); }
+  .icon-btn:hover { background: var(--column); color: var(--ink); }
+  .icon-btn.danger:hover { color: var(--danger); background: #fdecec; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--column); }
+  .seg button, .seg label { flex: 1; text-align: center; border-radius: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .seg button { padding: 8px 12px; }
+  .seg label span { display: block; padding: 8px 12px; border-radius: 9px; }
+  .seg .on, .seg input:checked + span { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+
+  .bar { height: 10px; border-radius: 999px; background: var(--column); overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s ease; }
+
+  .quick { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 13.5px; transition: border-color .15s, box-shadow .15s; }
+  .quick:hover { border-color: #c7ced6; box-shadow: var(--shadow); }
+  .dot { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; flex-shrink: 0; }
+  .dot svg.lucide { width: 16px; height: 16px; }
+
+  .column { background: var(--column); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .col-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 2px 4px; }
+  .count { font-size: 13px; font-weight: 700; min-width: 26px; text-align: center; padding: 1px 8px; border-radius: 999px; background: var(--surface); color: var(--muted); }
+  .empty { border: 1.5px dashed #cfd6de; border-radius: 14px; padding: 22px 14px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  .tcard { background: var(--surface); border-radius: 14px; padding: 14px; box-shadow: var(--shadow); border: 1px solid transparent; transition: border-color .15s, opacity .2s; }
+  .tcard:hover { border-color: var(--line); }
+  .tcard.is-done { background: #fafbfc; box-shadow: none; border-color: var(--line); }
+  .tcard.is-done .t-title { text-decoration: line-through; text-decoration-color: #9aa5b1; color: var(--muted); }
+  .tcard.is-done .t-body { opacity: .6; }
+  .t-title { font-weight: 600; font-size: 15.5px; line-height: 1.45; overflow-wrap: anywhere; }
+  .t-desc { font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+  .check { display: grid; place-items: center; width: 24px; height: 24px; margin-top: 1px; border-radius: 8px; border: 2px solid #b8c1cb; background: var(--surface); color: transparent; flex-shrink: 0; transition: background .15s, border-color .15s; }
+  .check:hover { border-color: var(--accent); color: #9fd3cb; }
+  .check.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .check svg.lucide { width: 15px; height: 15px; stroke-width: 3; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 700; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  .meta { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .meta svg.lucide { width: 14px; height: 14px; }
+  .meta.late { color: var(--danger); }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--column); color: var(--ink); }
+  .move { font-size: 12.5px; font-weight: 600; color: var(--accent); display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 8px; }
+  .move:hover { background: var(--accent-soft); }
+  .move svg.lucide { width: 14px; height: 14px; }
+  .day { background: var(--column); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .day-head { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
+  .day-add { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; color: var(--accent); background: var(--surface); box-shadow: var(--shadow); margin-inline-start: auto; }
+  .day-add:hover { background: var(--accent); color: #fff; }
+  .day-empty { font-size: 13px; color: var(--muted); padding: 6px 2px 4px; }
+  .week-grid { display: grid; gap: 10px; grid-template-columns: 1fr; align-items: start; }
+  @media (min-width: 640px) { .week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 900px) { .week-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (min-width: 1180px) { .week-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  .witem { display: flex; align-items: flex-start; gap: 8px; background: var(--surface); border-radius: 10px; padding: 8px 9px; box-shadow: var(--shadow); }
+  .witem .check { width: 20px; height: 20px; border-radius: 6px; }
+  .witem .check svg.lucide { width: 13px; height: 13px; }
+  .w-title { flex: 1; min-width: 0; text-align: start; font-size: 13.5px; font-weight: 600; line-height: 1.45; overflow-wrap: break-word; }
+  .w-title:hover { color: var(--accent); }
+  .witem.is-done .w-title { text-decoration: line-through; color: var(--muted); }
+  .pdot { width: 8px; height: 8px; border-radius: 999px; margin-top: 7px; flex-shrink: 0; }
+  .w-del { color: var(--muted); margin-top: 1px; }
+  .w-del:hover { color: var(--danger); }
+  .w-del svg.lucide { width: 15px; height: 15px; }
+  .dchip { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; padding: 6px 8px; border-radius: 11px; border: 1.5px solid var(--line); background: var(--surface); line-height: 1.35; }
+  .dchip b { font-size: 13px; white-space: nowrap; }
+  .dchip small { white-space: nowrap; }
+  .dchip small { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .dchip:hover { border-color: #c7ced6; }
+  .dchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .dchip.on small { color: #d8f3ee; }
+  .confirm-del { font-size: 12.5px; font-weight: 700; color: var(--danger); background: #fdecec; border-radius: 9px; padding: 5px 10px; }
+
+  .lbl { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .input { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 11px; padding: 10px 12px; min-height: 44px; }
+  .input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .gchip { cursor: pointer; position: relative; }
+  .gchip input, .pchip input { position: absolute; opacity: 0; pointer-events: none; }
+  .gchip span { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-weight: 600; font-size: 13.5px; }
+  .gchip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .pchip { flex: 1; position: relative; cursor: pointer; }
+  .pchip span { display: block; text-align: center; padding: 9px 8px; border-radius: 11px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: 14px; color: var(--muted); }
+  .pchip input:checked + span { background: var(--pbg); color: var(--pfg); border-color: var(--pfg); }
+  .gchip input:focus-visible + span, .pchip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sugg { font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px dashed #c7ced6; color: var(--muted); }
+  .sugg:hover { border-color: var(--accent); color: var(--ink); }
+  .err { color: var(--danger); font-size: 13.5px; font-weight: 600; }
+
+  .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(16, 24, 40, .45); display: flex; align-items: flex-end; justify-content: center; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+  @media (min-width: 640px) { .overlay { align-items: center; } }
+  .sheet { width: 100%; max-height: calc(100% - 8px); overflow: auto; background: var(--surface); border-radius: 20px; box-shadow: 0 20px 50px rgba(16, 24, 40, .2); }
+  .lock { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); }
+  .lock-card { width: 100%; max-width: 360px; text-align: center; display: flex; flex-direction: column; gap: 14px; }
+  .pin { text-align: center; font-size: 26px; letter-spacing: .4em; font-weight: 700; }
+  .toast { position: fixed; z-index: 60; bottom: max(18px, env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+
+  /* بطاقة الإنفوجرافيك: ألوان ثابتة لأنها تُصدَّر صورةً وتُطبع */
+  #infographic { width: 760px; background: #ffffff; color: #1c2733; font-family: var(--font); border-radius: 22px; overflow: hidden; border: 1px solid #e2e6eb; }
+  #infographic .ig-head { background: linear-gradient(135deg, #0b6b61 0%, #0f8a7c 60%, #1aa190 100%); color: #ffffff; padding: 28px 32px; display: flex; gap: 24px; align-items: center; justify-content: space-between; }
+  #infographic .ig-title { font-weight: 700; font-size: 27px; line-height: 1.35; }
+  #infographic .ig-sub { font-size: 15px; color: #d8f3ee; }
+  #infographic .ig-body { padding: 24px 32px 8px; display: flex; flex-direction: column; gap: 20px; }
+  #infographic .ig-stats { display: flex; gap: 12px; }
+  #infographic .ig-stat { flex: 1; border-radius: 14px; padding: 12px 16px; background: #f4f6f8; }
+  #infographic .ig-stat b { display: block; font-size: 26px; line-height: 1.3; }
+  #infographic .ig-stat small { font-size: 13px; color: #66727f; font-weight: 600; }
+  #infographic .ig-sec-head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 2px solid #eef1f4; margin-bottom: 10px; }
+  #infographic .ig-sec-head h3 { font-weight: 700; font-size: 18px; }
+  #infographic .ig-sec-head small { color: #66727f; font-size: 13px; font-weight: 600; }
+  #infographic .ig-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: #f9fafb; border: 1px solid #eef1f4; }
+  #infographic .ig-row + .ig-row { margin-top: 8px; }
+  #infographic .ig-row-title { font-weight: 700; font-size: 15px; }
+  #infographic .ig-row-meta { font-size: 12.5px; color: #66727f; font-weight: 600; }
+  #infographic .ig-pill { display: inline-block; line-height: 1; font-size: 12.5px; font-weight: 700; padding: 8px 12px 9px; border-radius: 999px; white-space: nowrap; }
+  #infographic .ig-foot { margin: 16px 32px 0; padding: 14px 0 22px; border-top: 1px dashed #d5dbe1; display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #66727f; font-weight: 600; }
+  #infographic .tile { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
+  #infographic svg.lucide { width: 20px; height: 20px; }
+  #infographic.ig-week { width: 1040px; }
+  #infographic .wk-grid { display: grid; border: 1px solid #e2e6eb; border-radius: 14px; overflow: hidden; }
+  #infographic .wk-grid > div { padding: 10px 12px; border-bottom: 1px solid #eef1f4; }
+  #infographic .wk-grid > .wk-th + .wk-th, #infographic .wk-grid > .wk-cell { border-inline-start: 1px solid #eef1f4; }
+  #infographic .wk-th { background: #0b7a6e; color: #ffffff; font-weight: 700; font-size: 14px; }
+  #infographic .wk-day { background: #f4f6f8; display: flex; flex-direction: column; }
+  #infographic .wk-day b { font-size: 15px; }
+  #infographic .wk-day small { font-size: 12.5px; color: #66727f; font-weight: 600; }
+  #infographic .wk-today { background: #e3f3f0; }
+  #infographic .wk-item { display: flex; gap: 8px; align-items: flex-start; }
+  #infographic .wk-item + .wk-item { margin-top: 8px; }
+  #infographic .wk-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; margin-top: 8px; }
+  #infographic .wk-title { font-weight: 700; font-size: 14px; line-height: 1.45; }
+  #infographic .wk-meta { font-size: 12px; color: #66727f; font-weight: 600; }
+  #infographic .wk-none { color: #b8c1cb; }
+  #infographic .wk-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12.5px; color: #66727f; font-weight: 600; }
+  #infographic .wk-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+  #infographic .wk-legend .wk-dot { margin-top: 0; }
+  /* إنفوجرافيك الأسبوع بأسلوب الملصق: كريمي + مرجاني + رمادي فحمي */
+  #infographic.poster { width: 860px; background: #f3ede4; color: #48484a; border: none; border-radius: 0; font-family: "Cairo", var(--font); padding: 44px 44px 30px; }
+  .poster, .poster * { line-height: normal !important; }
+  .poster .p-rule { height: 3px; background: #48484a; }
+  .poster .p-thin { height: 1px; background: #cfc5b8; }
+  .poster .p-kicker { font-size: 15px; font-weight: 700; color: #e2725b; }
+  .poster .p-title { font-size: 66px; font-weight: 900; margin: -16px 0 -14px; }
+  .poster .p-title span { color: #e2725b; }
+  .poster .p-sub { font-size: 17px; font-weight: 600; color: #7a7470; }
+  .poster .p-row { display: flex; gap: 28px; align-items: stretch; }
+  .poster .p-h { font-size: 24px; font-weight: 900; color: #e2725b; line-height: 1.3; }
+  .poster .p-h.dark { color: #48484a; }
+  .poster .p-big { font-size: 128px; font-weight: 900; color: #48484a; margin: -52px 0 -58px; }
+  .poster .p-big small { font-size: 64px; }
+  .poster .p-mid { font-size: 58px; font-weight: 900; line-height: 1.05; color: #e2725b; }
+  .poster .p-cap { font-size: 21px; font-weight: 900; line-height: 1.35; color: #e2725b; }
+  .poster .p-cap.dark { color: #48484a; }
+  .poster .p-note { font-size: 13.5px; font-weight: 600; color: #7a7470; line-height: 1.6; }
+  .poster .p-ent { flex: 1; text-align: center; }
+  .poster .p-ent b { display: block; font-size: 46px; font-weight: 900; margin: -12px 0 -14px; }
+  .poster .p-ent span { font-size: 14px; font-weight: 700; }
+  .poster .p-bar { height: 8px; background: #e6ddd1; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .poster .p-bar i { display: block; height: 100%; background: #e2725b; border-radius: 99px; }
+  .poster .p-type { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; width: 108px; }
+  .poster .p-type .ring { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 999px; background: #ffffff; border: 2px solid #48484a; color: #e2725b; }
+  .poster .p-type .ring svg.lucide { width: 28px; height: 28px; }
+  .poster .p-type b { font-size: 26px; font-weight: 900; margin: -6px 0 -10px; }
+  .poster .p-type small { font-size: 12.5px; font-weight: 700; }
+  .poster .p-coral { background: #e2725b; color: #ffffff; padding: 22px 24px; }
+  .poster .p-coral .p-h, .poster .p-coral .p-cap { color: #ffffff; }
+  .poster .p-coral .p-note { color: #fde4dc; }
+  .poster .p-day { display: flex; gap: 18px; align-items: flex-start; padding: 14px 0; }
+  .poster .p-day + .p-day { border-top: 1px dashed #cfc5b8; }
+  .poster .p-cal { width: 86px; flex-shrink: 0; background: #ffffff; border: 2px solid #48484a; text-align: center; }
+  .poster .p-cal div { background: #e2725b; color: #ffffff; font-size: 13px; font-weight: 700; }
+  .poster .p-cal b { display: block; font-size: 36px; font-weight: 900; color: #48484a; margin: -6px 0 -8px; }
+  .poster .p-tasks { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+  .poster .p-task { display: inline-flex; align-items: center; gap: 7px; background: #ffffff; border-radius: 6px; padding: 0 10px; font-size: 14px; font-weight: 700; }
+  .poster .p-task em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #ffffff; background: #48484a; border-radius: 4px; padding: 0 6px; }
+  .poster .p-task.done { color: #9a928a; text-decoration: line-through; }
+  .poster .p-dot { width: 9px; height: 9px; border-radius: 99px; flex-shrink: 0; }
+  .poster .p-foot { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; font-weight: 700; color: #7a7470; }
+  /* html2canvas يقيس خط الأساس بصورة مؤقتة بلا alt؛ قاعدة Tailwind (img{display:block}) تفسد القياس فتنزاح النصوص */
+  img:not([alt]) { display: inline !important; }
+
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    body { background: #ffffff !important; }
+    body * { visibility: hidden !important; }
+    #infographic, #infographic * { visibility: visible !important; }
+    #infographic { position: absolute; top: 0; right: 0; left: 0; margin: 0 auto; border: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .overlay { position: absolute; background: none; padding: 0; display: block; }
+    .sheet { max-height: none; overflow: visible; box-shadow: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div id="app" dir="rtl" lang="ar" class="wrap max-w-7xl mx-auto"></div>
+<div id="modal-root" dir="rtl" lang="ar"></div>
+<div id="toast-root" dir="rtl" lang="ar"></div>
+
+<script>
+document.documentElement.lang = 'ar';
+document.documentElement.dir = 'rtl';
+
+const SCHOOLS = [
+  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء', tag: 'أبو الدرداء', grades: [5, 6, 7, 8, 9, 10, 11, 12] },
+  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان', tag: 'سيف بن سلطان', grades: [11, 12] },
+  // برنامج وليس مدرسة: بلا صفوف دراسية
+  { id: 'school-uni-program', name: 'برنامج الصحة المدرسية والجامعية', short: 'برنامج الصحة المدرسية والجامعية', tag: 'البرنامج', grades: [], program: true },
+];
+const GRADES = { 5: 'الخامس', 6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر', 11: 'الحادي عشر', 12: 'الثاني عشر' };
+const COLUMNS = {
+  today: { label: 'مهام اليوم', icon: 'list-todo', color: '#1d5fbf' },
+  progress: { label: 'قيد التنفيذ', icon: 'loader', color: '#b54708' },
+  done: { label: 'منجزة', icon: 'circle-check', color: '#15803d' },
+};
+const PRIORITIES = {
+  urgent: { label: 'عاجلة', bg: '#fdecec', fg: '#b42318', rank: 0 },
+  medium: { label: 'متوسطة', bg: '#fff1e0', fg: '#b54708', rank: 1 },
+  normal: { label: 'عادية', bg: '#e8f1fd', fg: '#1d5fbf', rank: 2 },
+};
+// grades: single = صف واحد إلزامي، multi = صفوف متعددة إلزامية، optional = صفوف اختيارية، none = بدون صفوف
+const TYPES = {
+  lecture: { label: 'محاضرة توعوية', icon: 'presentation', color: '#2563eb', grades: 'single', titleLabel: 'عنوان المحاضرة', ph: 'مثال: أضرار الوجبات السريعة' },
+  radio: { label: 'يوم عالمي في الإذاعة', icon: 'radio', color: '#9333ea', grades: 'none', titleLabel: 'عنوان المناسبة', ph: 'مثال: اليوم العالمي لغسل اليدين' },
+  screening: { label: 'الفحص الشامل', icon: 'stethoscope', color: '#0d9488', grades: 'multi', titleLabel: 'عنوان المهمة (اختياري)', ph: 'مثال: الطول والوزن وحدة الإبصار', defaultTitle: 'الفحص الشامل' },
+  project: { label: 'مشروع صحي', icon: 'heart-pulse', color: '#e11d48', grades: 'optional', titleLabel: 'اسم المشروع', ph: 'اختر من المقترحات أو اكتب اسم المشروع', suggestions: ['مشروع تعزيز صحة الفم والأسنان', 'مشروع وزنك دليل صحتك'] },
+  vaccine: { label: 'التحصينات واللقاحات', icon: 'syringe', color: '#ea580c', grades: 'optional', titleLabel: 'عنوان المهمة (اختياري)', ph: 'مثال: حملة التطعيم الموسمية', defaultTitle: 'التحصينات واللقاحات' },
+  clinic: { label: 'تنظيم غرفة الصحة', icon: 'briefcase-medical', color: '#0891b2', grades: 'none', titleLabel: 'عنوان المهمة (اختياري)', ph: 'مثال: جرد الأدوية والمستلزمات', defaultTitle: 'تنظيم غرفة الصحة المدرسية', suggestions: ['جرد الأدوية والمستلزمات', 'تحديث السجلات الصحية للطلاب', 'تعقيم الأدوات والأسطح'] },
+  custom: { label: 'مهمة عامة', icon: 'clipboard-list', color: '#64748b', grades: 'optional', titleLabel: 'عنوان المهمة', ph: 'اكتب عنوان المهمة' },
+};
+const QUICK_ORDER = ['lecture', 'radio', 'screening', 'project', 'vaccine', 'clinic'];
+const TYPE_ORDER = ['custom', ...QUICK_ORDER];
+
+// ---------- التخزين ----------
+const memStore = {};
+const store = {
+  get(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : (key in memStore ? memStore[key] : fallback); }
+    catch { return key in memStore ? memStore[key] : fallback; }
+  },
+  set(key, value) {
+    memStore[key] = value;
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  },
+};
+const tasksKey = school => `shp:v2:tasks:${school}`;
+const PREFS_KEY = 'shp:v2:prefs';
+const PIN_KEY = 'shp:v2:pin';
+
+// ---------- التاريخ ----------
+const pad = n => String(n).padStart(2, '0');
+const toIso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromIso = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = fromIso(s); d.setDate(d.getDate() + n); return toIso(d); };
+const today = () => toIso(new Date());
+const LOCALE = 'ar-OM-u-nu-latn-ca-gregory';
+const fmtLong = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(fromIso(s));
+const fmtShort = s => new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long' }).format(fromIso(s));
+function fmtDue(s) {
+  const t = today();
+  if (s === t) return 'اليوم';
+  if (s === addDays(t, 1)) return 'غداً';
+  if (s === addDays(t, -1)) return 'أمس';
+  return fmtShort(s);
+}
+const fmtDay = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(fromIso(s));
+const fmtWeekday = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long' }).format(fromIso(s));
+const fmtDayMonth = s => new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long' }).format(fromIso(s));
+const diffDays = (a, b) => Math.round((fromIso(b) - fromIso(a)) / 86400000);
+// بداية الأسبوع (الأحد) مع إزاحة بالأسابيع
+// أسبوع الدوام من الأحد إلى الخميس؛ في الجمعة والسبت يكون «هذا الأسبوع» هو الأسبوع القادم
+const weekStart = (offset = 0) => { const g = fromIso(today()).getDay(); return addDays(today(), -g + (g >= 5 ? 7 : 0) + 7 * offset); };
+const weekDays = offset => Array.from({ length: 5 }, (_, i) => addDays(weekStart(offset), i));
+const weekOf = d => Math.floor(diffDays(weekStart(0), d) / 7);
+function fmtTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  return `${pad(((h + 11) % 12) + 1)}:${pad(m)} ${h < 12 ? 'ص' : 'م'}`;
+}
+
+// ---------- أدوات ----------
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+const gradeName = g => `الصف ${GRADES[g]}`;
+const typeOf = t => TYPES[t.type] || TYPES.custom;
+const prioOf = t => PRIORITIES[t.priority] || PRIORITIES.normal;
+const isUpcoming = t => t.status === 'today' && !!t.due && t.due > today();
+const schoolGrades = () => SCHOOLS.find(s => s.id === state.school).grades;
+const titleOf = t => (t.title && t.title.trim()) || typeOf(t).defaultTitle || typeOf(t).label;
+const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
+const refreshIcons = () => { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 } }); };
+
+// ---------- نقل بيانات الإصدار السابق (مهام مرتبطة بيوم وفترة) ----------
+function migrateV1() {
+  if (store.get('shp:v2:migrated', false)) return;
+  try {
+    const bySchool = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const m = key && key.match(/^shp:v1:([^:]+):(\d{4}-\d{2}-\d{2})$/);
+      if (!m) continue;
+      const [, school, date] = m;
+      (JSON.parse(localStorage.getItem(key)) || []).forEach(t => {
+        const done = t.status === 'done';
+        (bySchool[school] = bySchool[school] || []).push({
+          id: t.id || uid(), type: t.type || 'custom', title: t.title || '',
+          desc: [t.time ? `الوقت: ${fmtTime(t.time)}` : '', t.note].filter(Boolean).join(' · '),
+          grades: t.grades || [], priority: 'normal', due: date,
+          status: done ? 'done' : 'today', prevStatus: 'today', doneAt: done ? date : null,
+          created: t.created || Date.now(),
+        });
+      });
+    }
+    Object.entries(bySchool).forEach(([school, list]) => store.set(tasksKey(school), [...store.get(tasksKey(school), []), ...list]));
+    const old = JSON.parse(localStorage.getItem('shp:v1:prefs') || '{}');
+    if (old.school || old.preparer) store.set(PREFS_KEY, { ...store.get(PREFS_KEY, {}), ...old });
+  } catch {}
+  store.set('shp:v2:migrated', true);
+}
+migrateV1();
+
+// ---------- الحالة ----------
+const prefs = store.get(PREFS_KEY, {});
+const state = {
+  school: SCHOOLS.some(s => s.id === prefs.school) ? prefs.school : SCHOOLS[0].id,
+  tasks: [],
+  pendingDelete: null,
+  preparer: prefs.preparer || '',
+};
+const load = () => { state.tasks = store.get(tasksKey(state.school), []); };
+const save = () => store.set(tasksKey(state.school), state.tasks);
+const savePrefs = () => store.set(PREFS_KEY, { school: state.school, preparer: state.preparer });
+
+// مهام اليوم = غير المنجزة المستحقة اليوم أو المتأخرة + ما أُنجز اليوم
+function todayScope() {
+  const t = today();
+  return state.tasks.filter(x => x.status === 'done' ? x.doneAt === t : (x.due || t) <= t);
+}
+function stats() {
+  const scope = todayScope();
+  const done = scope.filter(x => x.status === 'done').length;
+  return { total: scope.length, done, left: scope.length - done, pct: scope.length ? Math.round((done / scope.length) * 100) : 0 };
+}
+function columnTasks(key, list = state.tasks) {
+  const items = list.filter(t => t.status === key && !isUpcoming(t));
+  if (key === 'done') return items.sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '') || b.created - a.created);
+  return items.sort((a, b) => prioOf(a).rank - prioOf(b).rank || (a.due || '').localeCompare(b.due || '') || a.created - b.created);
+}
+
+// ---------- العرض ----------
+const app = document.getElementById('app');
+
+function render() {
+  const school = SCHOOLS.find(s => s.id === state.school);
+  const s = stats();
+  app.innerHTML = `
+    <header class="flex flex-col gap-5">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold muted flex items-center gap-2 num"><i data-lucide="calendar-days"></i>${esc(fmtLong(today()))}</p>
+          <h1 class="text-2xl sm:text-3xl font-bold mt-1">مهامي اليومية</h1>
+          <p class="muted font-medium">${esc(school.name)}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn" data-action="backup"><i data-lucide="database-backup"></i>نقل البيانات</button>
+          <button class="btn" data-action="lock-menu" aria-label="قفل التطبيق"><i data-lucide="lock"></i>${hasPin() ? 'قفل' : 'حماية برمز'}</button>
+          <button class="btn" data-action="infographic"><i data-lucide="chart-pie"></i>تقرير اليوم</button>
+          <button class="btn btn-primary" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
+        </div>
+      </div>
+
+      <div class="seg grid grid-cols-1 sm:grid-cols-2" role="tablist" aria-label="اختيار المدرسة أو البرنامج">
+        ${SCHOOLS.map(sc => `<button role="tab" aria-selected="${sc.id === state.school}" data-action="school" data-id="${sc.id}" class="${sc.id === state.school ? 'on' : ''} ${sc.program ? 'sm:col-span-2' : ''}">${esc(sc.name)}</button>`).join('')}
+      </div>
+
+      <section class="panel p-4 sm:p-5" aria-label="نسبة إنجاز مهام اليوم">
+        <div class="flex items-baseline justify-between gap-3 flex-wrap mb-3">
+          <h2 class="font-bold">نسبة إنجاز مهام اليوم</h2>
+          <p class="muted text-sm font-semibold num">${s.total ? `أنجزت ${s.done} من ${s.total}` : 'لا توجد مهام مستحقة اليوم'}
+            <span class="text-xl font-bold ms-2" style="color:var(--accent)">${s.pct}%</span></p>
+        </div>
+        <div class="bar" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${s.pct}%"></span></div>
+      </section>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-sm font-semibold muted">إضافة سريعة:</span>
+        ${QUICK_ORDER.map(k => { const T = TYPES[k]; return `
+          <button class="quick" data-action="add" data-type="${k}">
+            <span class="dot" style="background:${rgba(T.color, .12)};color:${T.color}"><i data-lucide="${T.icon}"></i></span>${T.label}
+          </button>`; }).join('')}
+      </div>
+    </header>
+
+    <main class="grid gap-5 lg:grid-cols-3 items-start mt-7">
+      ${Object.keys(COLUMNS).map(column).join('')}
+    </main>
+    ${upcomingSection()}
+    ${state.tasks.length === 0 ? `
+      <div class="text-center mt-6">
+        <button class="btn" data-action="sample"><i data-lucide="file-text"></i>تحميل مهام تجريبية لرؤية الشكل</button>
+      </div>` : ''}`;
+  refreshIcons();
+}
+
+function column(key) {
+  const C = COLUMNS[key];
+  const list = columnTasks(key);
+  return `
+    <section class="column" aria-labelledby="col-${key}">
+      <div class="col-head">
+        <span style="color:${C.color}"><i data-lucide="${C.icon}"></i></span>
+        <h2 id="col-${key}" class="font-bold text-[17px]">${C.label}</h2>
+        <span class="count num">${list.length}</span>
+        ${key === 'done' && list.length ? `<button class="move ms-auto" style="color:var(--danger)" data-action="clear-done"><i data-lucide="eraser"></i>حذف المهام المنجزة</button>` : ''}
+      </div>
+      ${list.length
+        ? `<ul class="flex flex-col gap-3">${list.map(taskCard).join('')}</ul>`
+        : `<p class="empty">${key === 'today' ? 'لا توجد مهام بعد. اضغط «إضافة مهمة» للبدء.' : key === 'progress' ? 'لا توجد مهام قيد التنفيذ.' : 'المهام التي تُتمّها تظهر هنا.'}</p>`}
+    </section>`;
+}
+
+let weekOffset = 0;
+
+// خطة الأسبوع: الأسبوع كاملاً من الأحد إلى الخميس، بكل مهام كل يوم
+function upcomingSection() {
+  const days = weekDays(weekOffset);
+  const start = days[0], end = days[4];
+  const byDay = d => state.tasks.filter(t => t.due === d)
+    .sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
+  const shown = days;
+  const later = state.tasks.filter(t => isUpcoming(t) && t.due > end).length;
+  return `
+    <section class="mt-8" aria-labelledby="up-h">
+      <div class="col-head mb-3">
+        <span style="color:#6d28d9"><i data-lucide="calendar-range"></i></span>
+        <h2 id="up-h" class="font-bold text-[17px]">خطة الأسبوع</h2>
+        <span class="text-sm muted font-semibold num">${esc(fmtDayMonth(start))} – ${esc(fmtDayMonth(end))}</span>
+        <div class="flex items-center gap-1 ms-auto">
+          <button class="move" data-action="week-export"><i data-lucide="image-down"></i>تصدير جدول الأسبوع</button>
+          ${weekOffset !== 0 ? `<button class="move" data-action="week-now">هذا الأسبوع</button>` : ''}
+          <button class="icon-btn" data-action="week" data-n="-1" aria-label="الأسبوع السابق"><i data-lucide="chevron-right"></i></button>
+          <button class="icon-btn" data-action="week" data-n="1" aria-label="الأسبوع التالي"><i data-lucide="chevron-left"></i></button>
+        </div>
+      </div>
+      <div class="week-grid">
+        ${shown.map(d => { const items = byDay(d); return `
+          <div class="day" ${d === today() ? 'style="box-shadow: inset 0 0 0 2px var(--accent)"' : ''}>
+            <div class="day-head">
+              <div class="min-w-0">
+                <h3 class="font-bold text-[15px] leading-tight">${esc(fmtWeekday(d))}</h3>
+                <span class="text-xs muted font-semibold num">${esc(fmtDayMonth(d))}${d === today() ? ' · اليوم' : d === addDays(today(), 1) ? ' · غداً' : ''}</span>
+              </div>
+              <button class="day-add" data-action="add-on" data-d="${d}" aria-label="إضافة مهمة ليوم ${esc(fmtWeekday(d))}"><i data-lucide="plus"></i></button>
+            </div>
+            ${items.length ? `<ul class="flex flex-col gap-2">${items.map(weekItem).join('')}</ul>` : `<p class="day-empty">لا توجد مهام</p>`}
+          </div>`; }).join('')}
+      </div>
+      ${later ? `<p class="text-sm muted font-semibold mt-3 num">و${later} ${later === 1 ? 'مهمة' : 'مهام'} بعد ${esc(fmtDayMonth(end))}. استخدم السهم للانتقال إلى الأسابيع التالية.</p>` : ''}
+    </section>`;
+}
+
+function weekItem(t) {
+  const P = prioOf(t), done = t.status === 'done';
+  return `
+    <li class="witem ${done ? 'is-done' : ''}" data-id="${t.id}">
+      <button class="check ${done ? 'on' : ''}" data-action="toggle" role="checkbox" aria-checked="${done}" aria-label="${done ? 'إلغاء الإتمام' : 'إتمام المهمة'}"><i data-lucide="check"></i></button>
+      <button class="w-title" data-action="edit" title="تعديل">${esc(titleOf(t))}</button>
+      <span class="pdot" style="background:${P.fg}" title="${P.label}"></span>
+    </li>`;
+}
+
+function taskCard(t) {
+  const T = typeOf(t), P = prioOf(t);
+  const done = t.status === 'done';
+  const late = !done && t.due && t.due < today();
+  const grades = (t.grades || []).slice().sort((a, b) => a - b);
+  return `
+    <li class="tcard ${done ? 'is-done' : ''}" data-id="${t.id}">
+      <div class="flex gap-3 items-start">
+        <button class="check ${done ? 'on' : ''}" data-action="toggle" role="checkbox" aria-checked="${done}" aria-label="${done ? 'إلغاء الإتمام' : 'إتمام المهمة'}"><i data-lucide="check"></i></button>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-start gap-2">
+            <p class="t-title flex-1 min-w-0">${esc(titleOf(t))}</p>
+            <div class="flex items-center -mt-1 -ms-1">
+              <button class="icon-btn" data-action="edit" aria-label="تعديل المهمة"><i data-lucide="pencil"></i></button>
+              ${state.pendingDelete === t.id
+                ? `<button class="confirm-del" data-action="delete-confirm">تأكيد الحذف</button>`
+                : `<button class="icon-btn danger" data-action="delete" aria-label="حذف المهمة"><i data-lucide="trash-2"></i></button>`}
+            </div>
+          </div>
+          <div class="t-body">
+            ${t.desc ? `<p class="t-desc mt-0.5">${esc(t.desc)}</p>` : ''}
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
+              <span class="pill" style="background:${P.bg};color:${P.fg}">${P.label}</span>
+              ${t.due ? `<span class="meta num ${late ? 'late' : ''}"><i data-lucide="calendar-clock"></i>${late ? 'متأخرة · ' : ''}${esc(fmtDue(t.due))}</span>` : ''}
+              ${t.type !== 'custom' ? `<span class="meta" style="color:${T.color}"><i data-lucide="${T.icon}"></i>${T.label}</span>` : ''}
+            </div>
+            ${grades.length ? `<div class="flex flex-wrap gap-1 mt-2">${grades.map(g => `<span class="chip">${gradeName(g)}</span>`).join('')}</div>` : ''}
+          </div>
+          ${t.status === 'today' && !isUpcoming(t) ? `<div class="mt-2"><button class="move" data-action="move" data-to="progress"><i data-lucide="arrow-left"></i>نقل إلى قيد التنفيذ</button></div>` : ''}
+          ${t.status === 'progress' ? `<div class="mt-2"><button class="move" data-action="move" data-to="today"><i data-lucide="undo-2"></i>إعادة إلى مهام اليوم</button></div>` : ''}
+        </div>
+      </div>
+    </li>`;
+}
+
+// ---------- نافذة الإضافة والتعديل ----------
+const modalRoot = document.getElementById('modal-root');
+let draft = null, formError = '', confirmAction = null;
+
+function openForm(task) {
+  draft = JSON.parse(JSON.stringify(task));
+  formWeek = weekOf(draft.due || today());
+  formError = '';
+  renderForm();
+  setTimeout(() => modalRoot.querySelector('#f-title')?.focus(), 30);
+}
+
+function renderForm() {
+  const T = TYPES[draft.type];
+  const isEdit = state.tasks.some(t => t.id === draft.id);
+  const mode = schoolGrades().length ? T.grades : 'none';
+  const statuses = isEdit ? ['today', 'progress', 'done'] : ['today', 'progress'];
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <form id="task-form" class="sheet max-w-lg p-5 sm:p-6 flex flex-col gap-4" novalidate>
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold flex-1">${isEdit ? 'تعديل المهمة' : 'إضافة مهمة'}</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+
+        <div>
+          <label class="lbl" for="f-title">${T.titleLabel}</label>
+          <input id="f-title" class="input" value="${esc(draft.title)}" placeholder="${esc(T.ph)}" autocomplete="off">
+          ${T.suggestions ? `<div class="flex flex-wrap gap-2 mt-2">${T.suggestions.map(s => `<button type="button" class="sugg" data-action="sugg" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
+        </div>
+
+        <div>
+          <label class="lbl" for="f-desc">وصف قصير (اختياري)</label>
+          <textarea id="f-desc" class="input" rows="2" placeholder="تفاصيل تساعدك على تنفيذ المهمة">${esc(draft.desc)}</textarea>
+        </div>
+
+        <fieldset>
+          <legend class="lbl">الأولوية</legend>
+          <div class="flex gap-2">
+            ${Object.entries(PRIORITIES).map(([k, P]) => `
+              <label class="pchip" style="--pbg:${P.bg};--pfg:${P.fg}">
+                <input type="radio" name="priority" value="${k}" ${draft.priority === k ? 'checked' : ''}>
+                <span>${P.label}</span>
+              </label>`).join('')}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend class="lbl">يوم المهمة</legend>
+          <div id="f-days">${dayStrip()}</div>
+        </fieldset>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="lbl" for="f-due">تاريخ الاستحقاق (أو اختر أي تاريخ)</label>
+            <input id="f-due" type="date" class="input num" value="${esc(draft.due)}">
+            <p id="f-due-hint" class="text-xs font-semibold mt-1.5" style="color:#6d28d9" ${draft.due > today() && draft.status === 'today' ? '' : 'hidden'}>ستظهر في «خطة الأسبوع» تحت يومها، ثم تنتقل إلى «مهام اليوم» في موعدها.</p>
+          </div>
+          <div>
+            <label class="lbl" for="f-type">التصنيف</label>
+            <select id="f-type" class="input">
+              ${TYPE_ORDER.map(k => `<option value="${k}" ${k === draft.type ? 'selected' : ''}>${TYPES[k].label}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        ${mode !== 'none' ? `
+          <fieldset>
+            <legend class="lbl">${mode === 'single' ? 'الصف المستهدف' : mode === 'multi' ? 'الصفوف المستهدفة (يمكن اختيار أكثر من صف)' : 'الصفوف المستهدفة (اختياري)'}</legend>
+            <div class="flex flex-wrap gap-2">
+              ${schoolGrades().map(g => `
+                <label class="gchip">
+                  <input type="${mode === 'single' ? 'radio' : 'checkbox'}" name="grade" value="${g}" ${draft.grades.includes(+g) ? 'checked' : ''}>
+                  <span>${gradeName(g)}</span>
+                </label>`).join('')}
+            </div>
+          </fieldset>` : ''}
+
+        <fieldset>
+          <legend class="lbl">الحالة</legend>
+          <div class="seg">
+            ${statuses.map(k => `<label><input class="sr-only" type="radio" name="status" value="${k}" ${draft.status === k ? 'checked' : ''}><span>${COLUMNS[k].label}</span></label>`).join('')}
+          </div>
+        </fieldset>
+
+        ${formError ? `<p class="err" role="alert">${formError}</p>` : ''}
+
+        <div class="flex gap-2 justify-end flex-wrap pt-1">
+          ${isEdit ? `<button type="button" class="btn me-auto" style="color:var(--danger)" data-action="form-delete"><i data-lucide="trash-2"></i>حذف</button>` : ''}
+          <button type="button" class="btn" data-action="close">إلغاء</button>
+          <button type="submit" class="btn btn-primary"><i data-lucide="${isEdit ? 'check' : 'plus'}"></i>${isEdit ? 'حفظ التعديلات' : 'إضافة المهمة'}</button>
+        </div>
+      </form>
+    </div>`;
+  refreshIcons();
+}
+
+let formWeek = 0;
+function dayStrip() {
+  const due = modalRoot.querySelector('#f-due')?.value || draft.due;
+  const days = weekDays(formWeek);
+  const label = d => d === today() ? 'اليوم' : d === addDays(today(), 1) ? 'غداً' : fmtWeekday(d);
+  return `
+    <div class="flex items-center gap-1">
+      <button type="button" class="icon-btn" data-action="fweek" data-n="-1" aria-label="الأسبوع السابق"><i data-lucide="chevron-right"></i></button>
+      <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5 flex-1">
+        ${days.map(d => `<button type="button" class="dchip ${d === due ? 'on' : ''}" data-action="day-pick" data-d="${d}"><b>${label(d)}</b><small class="num">${esc(fmtDayMonth(d))}</small></button>`).join('')}
+      </div>
+      <button type="button" class="icon-btn" data-action="fweek" data-n="1" aria-label="الأسبوع التالي"><i data-lucide="chevron-left"></i></button>
+    </div>`;
+}
+function refreshDayStrip() {
+  const box = modalRoot.querySelector('#f-days');
+  if (box) { box.innerHTML = dayStrip(); refreshIcons(); }
+  updateDueHint();
+}
+
+function readForm() {
+  const f = modalRoot.querySelector('#task-form');
+  if (!f) return;
+  draft.title = f.querySelector('#f-title').value;
+  draft.desc = f.querySelector('#f-desc').value;
+  draft.due = f.querySelector('#f-due').value;
+  draft.priority = (f.querySelector('input[name=priority]:checked') || {}).value || 'normal';
+  draft.status = (f.querySelector('input[name=status]:checked') || {}).value || 'today';
+  draft.grades = [...f.querySelectorAll('input[name=grade]:checked')].map(i => +i.value);
+}
+
+function validate() {
+  const T = TYPES[draft.type];
+  if (!T.defaultTitle && !draft.title.trim()) return `اكتب ${T.titleLabel.replace(' (اختياري)', '')}.`;
+  const noGrades = !schoolGrades().length;
+  if (!noGrades && T.grades === 'single' && draft.grades.length !== 1) return 'اختر الصف المستهدف للمحاضرة.';
+  if (!noGrades && T.grades === 'multi' && draft.grades.length === 0) return 'اختر صفاً واحداً على الأقل للفحص الشامل.';
+  if (!draft.due) return 'اختر تاريخ الاستحقاق.';
+  return '';
+}
+
+function closeModal() { modalRoot.innerHTML = ''; draft = null; confirmAction = null; }
+
+// إنفوجرافيك الأسبوع بأسلوب الملصق للمدرستين والبرنامج معاً
+function weekPosterHTML() {
+  const days = weekDays(weekOffset);
+  const data = SCHOOLS.map(sc => ({ ...sc, tasks: (sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), [])).filter(t => days.includes(t.due)) }));
+  const all = data.flatMap(sc => sc.tasks.map(t => ({ ...t, tag: sc.tag })));
+  const done = all.filter(t => t.status === 'done').length;
+  const pct = all.length ? Math.round((done / all.length) * 100) : 0;
+  const byDay = d => all.filter(t => t.due === d).sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank);
+  const shown = days;
+  const busiest = shown.reduce((m, d) => byDay(d).length > byDay(m).length ? d : m, shown[0]);
+  const prio = Object.entries(PRIORITIES).map(([k, P]) => ({ ...P, n: all.filter(t => (t.priority || 'normal') === k).length }));
+  const types = TYPE_ORDER.map(k => ({ k, T: TYPES[k], n: all.filter(t => (t.type || 'custom') === k).length })).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 6);
+  const top = all.filter(t => t.status !== 'done').sort((a, b) => prioOf(a).rank - prioOf(b).rank || a.due.localeCompare(b.due))[0];
+  const gradesAll = [...new Set(all.flatMap(t => t.grades || []))].sort((a, b) => a - b);
+  const y = fromIso(days[4]).getFullYear();
+  return `
+    <div id="infographic" class="poster" dir="rtl" lang="ar">
+      <div class="p-kicker">الصحة المدرسية · ${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[4]))} ${y}</div>
+      <div class="p-title">خطة <span>الأسبوع</span></div>
+      <div class="p-sub">مدرستا أبو الدرداء والإمام سيف بن سلطان، وبرنامج الصحة المدرسية والجامعية</div>
+      <div class="p-rule" style="margin:18px 0 22px"></div>
+
+      <div class="p-row">
+        <div style="flex:1.1">
+          <div class="p-h dark">مهام الأسبوع</div>
+          <div class="p-big num">${all.length}</div>
+          <div class="p-cap">مهمة موزعة على ${shown.length} ${shown.length > 2 ? 'أيام' : 'يوم'} عمل</div>
+          <div class="p-thin" style="margin:14px 0"></div>
+          <div class="p-note">أكثر الأيام ازدحاماً: <b style="color:#48484a">${esc(fmtWeekday(busiest))}</b> بعدد <span class="num">${byDay(busiest).length}</span> مهام</div>
+        </div>
+        <div style="width:2px;background:#cfc5b8"></div>
+        <div style="flex:1">
+          <div class="p-big num" style="color:#e2725b">${pct}<small>%</small></div>
+          <div class="p-cap dark">من مهام الأسبوع<br>منجزة حتى الآن</div>
+          <div class="p-bar" style="height:12px;margin-top:14px"><i style="width:${pct}%"></i></div>
+          <div class="p-note" style="margin-top:8px"><span class="num">${done}</span> منجزة · <span class="num">${all.length - done}</span> متبقية</div>
+        </div>
+      </div>
+
+      <div class="p-rule" style="margin:24px 0 18px"></div>
+      <div class="p-h">التوزيع حسب الجهة</div>
+      <div class="p-row" style="margin-top:12px;gap:20px">
+        ${data.map(sc => { const d = sc.tasks.filter(t => t.status === 'done').length; return `
+          <div class="p-ent">
+            <b class="num">${sc.tasks.length}</b>
+            <span>${esc(sc.name)}</span>
+            <div class="p-bar"><i style="width:${sc.tasks.length ? Math.round((d / sc.tasks.length) * 100) : 0}%"></i></div>
+          </div>`; }).join('')}
+      </div>
+
+      <div class="p-rule" style="margin:24px 0 18px"></div>
+      <div class="p-row" style="gap:24px">
+        <div style="flex:1.6">
+          <div class="p-h">أنواع المهام</div>
+          <div style="display:flex;flex-wrap:wrap;gap:14px 6px;margin-top:14px">
+            ${types.length ? types.map(x => `
+              <div class="p-type">
+                <span class="ring"><i data-lucide="${x.T.icon}"></i></span>
+                <b class="num">${x.n}</b>
+                <small>${x.T.label}</small>
+              </div>`).join('') : '<div class="p-note">لا توجد مهام هذا الأسبوع.</div>'}
+          </div>
+        </div>
+        <div style="flex:1">
+          <div class="p-h dark">الأولوية</div>
+          ${prio.map(P => `
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+              <span class="p-dot" style="background:${P.fg};width:14px;height:14px"></span>
+              <span style="font-weight:700;font-size:15px;width:64px">${P.label}</span>
+              <div class="p-bar" style="flex:1;margin:0"><i style="width:${all.length ? Math.round((P.n / all.length) * 100) : 0}%;background:${P.fg}"></i></div>
+              <b class="num" style="font-size:20px;font-weight:900;width:28px;text-align:center">${P.n}</b>
+            </div>`).join('')}
+          ${gradesAll.length ? `<div class="p-note" style="margin-top:16px">الصفوف المستهدفة: ${gradesAll.map(g => GRADES[g]).join('، ')}</div>` : ''}
+        </div>
+      </div>
+
+      ${top ? `
+        <div class="p-coral" style="margin-top:26px">
+          <div class="p-cap" style="font-size:16px">أهم مهمة هذا الأسبوع</div>
+          <div style="font-size:32px;font-weight:900;line-height:1.35;margin-top:2px">«${esc(titleOf(top))}»</div>
+          <div class="p-note" style="margin-top:4px">${esc([top.tag, typeOf(top).label, prioOf(top).label, fmtWeekday(top.due) + ' ' + fmtDayMonth(top.due)].join(' · '))}</div>
+        </div>` : ''}
+
+      <div class="p-rule" style="margin:26px 0 6px"></div>
+      <div class="p-h" style="margin-bottom:4px">أيام الأسبوع</div>
+      ${shown.map(d => { const list = byDay(d); return `
+        <div class="p-day">
+          <div class="p-cal"><div>${esc(fmtWeekday(d))}</div><b class="num">${fromIso(d).getDate()}</b></div>
+          <div class="p-tasks">
+            ${list.length ? list.map(t => `
+              <span class="p-task ${t.status === 'done' ? 'done' : ''}">
+                <span class="p-dot" style="background:${t.status === 'done' ? '#9a928a' : prioOf(t).fg}"></span>${esc(titleOf(t))}<em>${esc(t.tag)}</em>
+              </span>`).join('') : '<span class="p-note">لا توجد مهام</span>'}
+          </div>
+        </div>`; }).join('')}
+
+      <div class="p-rule" style="margin:16px 0 12px"></div>
+      <div class="p-foot">
+        <span>المعدّ: <span id="ig-preparer-out">${esc(state.preparer.trim() || '—')}</span></span>
+        <span>الخطة الأسبوعية للصحة المدرسية</span>
+      </div>
+    </div>`;
+}
+
+// جدول أسبوعي يجمع المدرستين: صف لكل يوم وعمود لكل مدرسة
+function weekReportHTML() {
+  const days = weekDays(weekOffset);
+  const data = SCHOOLS.map(sc => ({ ...sc, tasks: sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), []) }));
+  const forDay = (sc, d) => sc.tasks.filter(t => t.due === d)
+    .sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
+  const shown = days;
+  const all = data.flatMap(sc => sc.tasks.filter(t => days.includes(t.due)));
+  const done = all.filter(t => t.status === 'done').length;
+  const cell = (sc, d) => {
+    const list = forDay(sc, d);
+    if (!list.length) return `<div class="wk-none">—</div>`;
+    return list.map(t => {
+      const T = typeOf(t), P = prioOf(t), isDone = t.status === 'done';
+      const grades = (t.grades || []).slice().sort((a, b) => a - b).map(gradeName).join('، ');
+      return `
+        <div class="wk-item">
+          <span class="wk-dot" style="background:${isDone ? '#15803d' : P.fg}"></span>
+          <div style="min-width:0">
+            <div class="wk-title" style="${isDone ? 'color:#66727f' : ''}">${isDone ? '✓ ' : ''}${esc(titleOf(t))}</div>
+            <div class="wk-meta">${esc([T.label, grades].filter(Boolean).join(' · '))}</div>
+          </div>
+        </div>`;
+    }).join('');
+  };
+  return `
+    <div id="infographic" class="ig-week" dir="rtl" lang="ar">
+      <div class="ig-head">
+        <div style="min-width:0">
+          <div class="ig-sub" style="font-weight:600">الخطة الأسبوعية · الصحة المدرسية</div>
+          <div class="ig-title">جدول الأسبوع للمدرستين والبرنامج</div>
+          <div class="ig-sub num" style="margin-top:4px">${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[4]))} ${fromIso(days[4]).getFullYear()}</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0">
+          <div style="font-size:34px;font-weight:700;line-height:1.1" class="num">${all.length}</div>
+          <div class="ig-sub" style="font-weight:600">مهمة · <span class="num">${done}</span> منجزة</div>
+        </div>
+      </div>
+      <div class="ig-body">
+        <div class="wk-grid" style="grid-template-columns: 120px repeat(${data.length}, minmax(0, 1fr))">
+          <div class="wk-th">اليوم</div>
+          ${data.map(sc => `<div class="wk-th">${esc(sc.name)}</div>`).join('')}
+          ${shown.map(d => `
+            <div class="wk-day${d === today() ? ' wk-today' : ''}"><b>${esc(fmtWeekday(d))}</b><small class="num">${esc(fmtDayMonth(d))}</small></div>
+            ${data.map(sc => `<div class="wk-cell${d === today() ? ' wk-today' : ''}">${cell(sc, d)}</div>`).join('')}`).join('')}
+        </div>
+        <div class="wk-legend">
+          ${Object.values(PRIORITIES).map(P => `<span><span class="wk-dot" style="background:${P.fg}"></span>${P.label}</span>`).join('')}
+          <span><span class="wk-dot" style="background:#15803d"></span>منجزة</span>
+        </div>
+      </div>
+      <div class="ig-foot">
+        <span>المعدّ: <span id="ig-preparer-out">${esc(state.preparer.trim() || '—')}</span></span>
+        <span class="num">${all.length ? Math.round((done / all.length) * 100) : 0}% من مهام الأسبوع منجزة</span>
+      </div>
+    </div>`;
+}
+
+function openConfirm(title, text, okLabel, onOk) {
+  confirmAction = onOk;
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <div class="sheet max-w-sm p-5 sm:p-6 flex flex-col gap-3" role="alertdialog" aria-labelledby="cf-title">
+        <h2 id="cf-title" class="text-lg font-bold">${title}</h2>
+        <p class="muted">${text}</p>
+        <div class="flex gap-2 justify-end pt-2">
+          <button type="button" class="btn" data-action="close">إلغاء</button>
+          <button type="button" class="btn btn-danger" data-action="confirm-ok">${okLabel}</button>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => modalRoot.querySelector('[data-action=close]')?.focus(), 30);
+}
+
+function setStatus(t, status) {
+  if (status === 'done' && t.status !== 'done') { t.prevStatus = t.status; t.doneAt = today(); }
+  if (status !== 'done') t.doneAt = null;
+  t.status = status;
+}
+
+function updateDueHint() {
+  const due = modalRoot.querySelector('#f-due')?.value;
+  const status = (modalRoot.querySelector('input[name=status]:checked') || {}).value;
+  const hint = modalRoot.querySelector('#f-due-hint');
+  if (hint) hint.hidden = !(due && due > today() && status === 'today');
+}
+
+modalRoot.addEventListener('change', e => {
+  if (draft && e.target.id === 'f-due' && e.target.value) { formWeek = weekOf(e.target.value); refreshDayStrip(); }
+  if (draft && e.target.name === 'status') updateDueHint();
+  if (!draft || e.target.id !== 'f-type') return;
+  readForm();
+  draft.type = e.target.value;
+  const mode = TYPES[draft.type].grades;
+  if (mode === 'none') draft.grades = [];
+  if (mode === 'single') draft.grades = draft.grades.slice(0, 1);
+  formError = '';
+  renderForm();
+});
+
+modalRoot.addEventListener('submit', e => {
+  if (e.target.id !== 'task-form') return;
+  e.preventDefault();
+  readForm();
+  formError = validate();
+  if (formError) { renderForm(); return; }
+  const existing = state.tasks.find(x => x.id === draft.id);
+  const t = { ...draft, title: draft.title.trim(), desc: draft.desc.trim() };
+  if (existing) {
+    const status = t.status;
+    t.status = existing.status; t.doneAt = existing.doneAt; t.prevStatus = existing.prevStatus;
+    setStatus(t, status);
+    state.tasks[state.tasks.indexOf(existing)] = t;
+    toast('تم حفظ التعديلات');
+  } else {
+    state.tasks.push(t);
+    toast(isUpcoming(t) ? `أُضيفت إلى خطة الأسبوع (${fmtDue(t.due)})` : 'تمت إضافة المهمة');
+  }
+  save(); closeModal(); render();
+});
+
+modalRoot.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  const act = a.dataset.action;
+  if (act === 'close-overlay' && e.target !== a) return;
+  if (act === 'close' || act === 'close-overlay') closeModal();
+  if (act === 'confirm-ok') { const fn = confirmAction; closeModal(); fn && fn(); }
+  if (act === 'form-delete' && draft) {
+    const id = draft.id;
+    openConfirm('حذف المهمة؟', 'سيتم حذف هذه المهمة نهائياً.', 'حذف', () => {
+      state.tasks = state.tasks.filter(x => x.id !== id);
+      save(); render(); toast('تم حذف المهمة');
+    });
+  }
+  if (act === 'day-pick') { modalRoot.querySelector('#f-due').value = a.dataset.d; refreshDayStrip(); }
+  if (act === 'fweek') { formWeek += +a.dataset.n; refreshDayStrip(); }
+  if (act === 'sugg') { const inp = modalRoot.querySelector('#f-title'); inp.value = a.dataset.v; inp.focus(); }
+  if (act === 'gen-image') generateImage();
+  if (act === 'lock-now') showLock();
+  if (act === 'backup-copy') {
+    const ta = modalRoot.querySelector('#backup-out');
+    const done = () => toast('تم النسخ، الصقها في التطبيق الآخر');
+    try { navigator.clipboard.writeText(ta.value).then(done, () => { ta.select(); toast('النص محدد، انسخه يدوياً'); }); }
+    catch { ta.select(); toast('النص محدد، انسخه يدوياً'); }
+  }
+  if (act === 'backup-file') {
+    const url = URL.createObjectURL(new Blob([modalRoot.querySelector('#backup-out').value], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = `school-health-backup-${today()}.json`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  if (act === 'backup-import') backupResult(importData(modalRoot.querySelector('#backup-in').value));
+  if (act === 'pin-remove') { try { localStorage.removeItem(PIN_KEY); } catch {} delete memStore[PIN_KEY]; closeModal(); render(); toast('تم إلغاء القفل'); }
+  if (act === 'wk-style') { weekStyle = a.dataset.v; openInfographic('week'); }
+  if (act === 'print') window.print();
+});
+
+modalRoot.addEventListener('input', e => {
+  if (e.target.id !== 'ig-preparer') return;
+  state.preparer = e.target.value;
+  savePrefs();
+  const el = modalRoot.querySelector('#ig-preparer-out');
+  if (el) el.textContent = state.preparer.trim() || '—';
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalRoot.innerHTML) closeModal(); });
+
+// ---------- الإنفوجرافيك ----------
+function ring(pct) {
+  const r = 44, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+  return `
+    <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+      <circle cx="56" cy="56" r="${r}" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="10"></circle>
+      <circle cx="56" cy="56" r="${r}" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 56 56)"></circle>
+      <text x="56" y="62" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="700" font-family="IBM Plex Sans Arabic, Tahoma, sans-serif">${pct}%</text>
+    </svg>`;
+}
+
+function infographicHTML() {
+  const school = SCHOOLS.find(s => s.id === state.school);
+  const s = stats();
+  const scope = todayScope();
+  const sec = key => {
+    const C = COLUMNS[key];
+    const list = columnTasks(key, scope);
+    return `
+      <section>
+        <div class="ig-sec-head">
+          <span class="tile" style="background:${rgba(C.color, .12)};color:${C.color}"><i data-lucide="${C.icon}"></i></span>
+          <h3>${C.label}</h3>
+          <small style="margin-inline-start:auto" class="num">${list.length} ${list.length === 1 ? 'مهمة' : 'مهام'}</small>
+        </div>
+        ${list.length ? list.map(t => {
+          const T = typeOf(t), P = prioOf(t);
+          const grades = (t.grades || []).slice().sort((a, b) => a - b).map(gradeName).join('، ');
+          const meta = [T.label, grades, t.due && t.due < today() && key !== 'done' ? 'متأخرة' : ''].filter(Boolean).join(' · ');
+          return `
+            <div class="ig-row">
+              <span class="tile" style="background:${rgba(T.color, .13)};color:${T.color}"><i data-lucide="${T.icon}"></i></span>
+              <div style="flex:1;min-width:0">
+                <div class="ig-row-title">${esc(titleOf(t))}</div>
+                <div class="ig-row-meta">${esc(meta)}</div>
+              </div>
+              <span class="ig-pill" style="background:${key === 'done' ? '#e3f5e9' : P.bg};color:${key === 'done' ? '#15803d' : P.fg}">${key === 'done' ? 'منجزة' : P.label}</span>
+            </div>`;
+        }).join('') : `<div class="ig-row" style="color:#66727f">لا توجد مهام.</div>`}
+      </section>`;
+  };
+  return `
+    <div id="infographic" dir="rtl" lang="ar">
+      <div class="ig-head">
+        <div style="min-width:0">
+          <div class="ig-sub" style="font-weight:600">التقرير اليومي · الصحة المدرسية</div>
+          <div class="ig-title">${esc(school.name)}</div>
+          <div class="ig-sub num" style="margin-top:4px">${esc(fmtLong(today()))}</div>
+        </div>
+        ${ring(s.pct)}
+      </div>
+      <div class="ig-body">
+        <div class="ig-stats">
+          <div class="ig-stat"><b class="num">${s.total}</b><small>مهام اليوم</small></div>
+          <div class="ig-stat"><b class="num" style="color:#15803d">${s.done}</b><small>منجزة</small></div>
+          <div class="ig-stat"><b class="num" style="color:#b54708">${s.left}</b><small>متبقية</small></div>
+        </div>
+        ${sec('today')}
+        ${sec('progress')}
+        ${sec('done')}
+      </div>
+      <div class="ig-foot">
+        <span>المعدّ: <span id="ig-preparer-out">${esc(state.preparer.trim() || '—')}</span></span>
+        <span>نسبة الإنجاز <span class="num">${s.pct}%</span></span>
+      </div>
+    </div>`;
+}
+
+let exportName = '';
+let weekStyle = 'poster';
+function openInfographic(kind = 'day') {
+  exportName = kind === 'week'
+    ? `school-health-week-${weekDays(weekOffset)[0]}.png`
+    : `school-health-report-${state.school}-${today()}.png`;
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <div class="sheet p-4 sm:p-6 flex flex-col gap-4" style="max-width:960px">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold flex-1">${kind === 'week' ? 'جدول الأسبوع للمدرستين والبرنامج' : 'تقرير اليوم'}</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="flex-1" style="min-width:200px">
+            <label class="lbl" for="ig-preparer">اسم المعدّ (يظهر أسفل البطاقة)</label>
+            <input id="ig-preparer" class="input" value="${esc(state.preparer)}" placeholder="مثال: الممرض الصحي المدرسي">
+          </div>
+          <button class="btn btn-primary" data-action="gen-image"><i data-lucide="image-down"></i>حفظ كصورة</button>
+          ${inFrame ? '' : `<button class="btn" data-action="print"><i data-lucide="printer"></i>طباعة / PDF</button>`}
+        </div>
+        ${kind === 'week' ? `
+          <div class="seg" style="max-width:360px">
+            <button data-action="wk-style" data-v="poster" class="${weekStyle === 'poster' ? 'on' : ''}">إنفوجرافيك</button>
+            <button data-action="wk-style" data-v="table" class="${weekStyle === 'table' ? 'on' : ''}">جدول</button>
+          </div>` : ''}
+        <div id="ig-image-out" hidden></div>
+        <div style="overflow-x:auto;border-radius:22px;background:var(--column);padding:8px">
+          ${kind === 'week' ? (weekStyle === 'poster' ? weekPosterHTML() : weekReportHTML()) : infographicHTML()}
+        </div>
+      </div>
+    </div>`;
+  refreshIcons();
+}
+
+async function generateImage() {
+  const card = document.getElementById('infographic');
+  const out = document.getElementById('ig-image-out');
+  if (!card || !window.html2canvas) { toast('تعذر تحميل أداة إنشاء الصور'); return; }
+  card.querySelectorAll('svg.lucide').forEach(svg => svg.setAttribute('stroke', getComputedStyle(svg).color));
+  toast('جارٍ إنشاء الصورة…');
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    card.classList.add('capturing');
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      .finally(() => card.classList.remove('capturing'));
+    const url = canvas.toDataURL('image/png');
+    if (!inFrame) {
+      const a = document.createElement('a');
+      a.href = url; a.download = exportName;
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('تم حفظ الصورة');
+    }
+    out.hidden = false;
+    out.innerHTML = `
+      <p class="text-sm font-semibold muted mb-2">${inFrame
+        ? 'الصورة جاهزة: اضغط عليها مطولاً (في الجوال) أو انقر بالزر الأيمن واختر «حفظ الصورة».'
+        : 'تم تنزيل الصورة. يمكنك أيضاً حفظ النسخة أدناه يدوياً.'}</p>
+      <img src="${url}" alt="بطاقة تقرير اليوم" style="width:100%;max-width:520px;border-radius:14px;border:1px solid var(--line)">`;
+  } catch {
+    toast('تعذر إنشاء الصورة، حاول مرة أخرى');
+  }
+}
+
+// ---------- الأحداث ----------
+function newTask(type) {
+  return { id: uid(), type, title: '', desc: '', grades: [], priority: 'normal', due: today(), status: 'today', prevStatus: 'today', doneAt: null, created: Date.now() };
+}
+
+app.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  const act = a.dataset.action;
+  const li = a.closest('li[data-id]');
+  const t = li ? state.tasks.find(x => x.id === li.dataset.id) : null;
+  if (act !== 'delete' && act !== 'delete-confirm') state.pendingDelete = null;
+
+  if (act === 'school') { state.school = a.dataset.id; savePrefs(); load(); render(); }
+  if (act === 'add') openForm(newTask(a.dataset.type));
+  if (act === 'add-on') openForm({ ...newTask('custom'), due: a.dataset.d });
+  if (act === 'week') { weekOffset += +a.dataset.n; render(); }
+  if (act === 'week-export') openInfographic('week');
+  if (act === 'week-now') { weekOffset = 0; render(); }
+  if (act === 'infographic') openInfographic();
+  if (act === 'lock-menu') openLockMenu();
+  if (act === 'backup') openBackup();
+  if (act === 'sample') loadSample();
+  if (act === 'toggle' && t) {
+    setStatus(t, t.status === 'done' ? (t.prevStatus || 'today') : 'done');
+    save(); render();
+    if (t.status === 'done') toast('أحسنت، نُقلت المهمة إلى المنجزة');
+  }
+  if (act === 'move' && t) { setStatus(t, a.dataset.to); save(); render(); }
+  if (act === 'edit' && t) openForm(t);
+  if (act === 'delete' && t) {
+    state.pendingDelete = t.id; render();
+    setTimeout(() => { if (state.pendingDelete === t.id) { state.pendingDelete = null; render(); } }, 4000);
+  }
+  if (act === 'delete-confirm' && t) {
+    state.tasks = state.tasks.filter(x => x !== t);
+    state.pendingDelete = null;
+    save(); render(); toast('تم حذف المهمة');
+  }
+  if (act === 'clear-done') {
+    const n = state.tasks.filter(x => x.status === 'done').length;
+    openConfirm('حذف المهام المنجزة؟', `سيتم حذف ${n} ${n === 1 ? 'مهمة منجزة' : 'مهام منجزة'} من ${esc(SCHOOLS.find(s => s.id === state.school).short)} نهائياً.`, 'حذف', () => {
+      state.tasks = state.tasks.filter(x => x.status !== 'done');
+      save(); render(); toast('تم حذف المهام المنجزة');
+    });
+  }
+});
+
+let toastTimer;
+function toast(msg) {
+  const root = document.getElementById('toast-root');
+  root.innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (root.innerHTML = ''), 2200);
+}
+
+function loadSample() {
+  const d = today();
+  // تكييف صفوف المثال مع صفوف المدرسة الحالية
+  const sg = list => list.every(g => schoolGrades().includes(g)) ? list : schoolGrades().slice(0, list.length);
+  const mk = o => ({ ...newTask(o.type || 'custom'), ...o, grades: sg(o.grades || []), id: uid() });
+  state.tasks = [
+    mk({ type: 'radio', title: 'اليوم العالمي لغسل اليدين', desc: 'فقرة توعوية قصيرة في طابور الصباح', priority: 'urgent', status: 'done', doneAt: d }),
+    mk({ type: 'lecture', title: 'التغذية الصحية وأضرار الوجبات السريعة', grades: [8], priority: 'medium', status: 'done', doneAt: d }),
+    mk({ type: 'screening', title: 'الطول والوزن وحدة الإبصار', grades: [7, 10], priority: 'urgent', status: 'progress' }),
+    mk({ type: 'project', title: 'مشروع تعزيز صحة الفم والأسنان', grades: [5, 6], priority: 'medium', status: 'progress', due: addDays(d, 2) }),
+    mk({ type: 'clinic', title: 'جرد الأدوية والمستلزمات', priority: 'normal' }),
+    mk({ title: 'إدخال نتائج الفحص الشامل في النظام', desc: 'بعد انتهاء فحص الصفين السابع والعاشر', priority: 'medium' }),
+    mk({ type: 'vaccine', title: 'تجهيز كشوف حملة التطعيم', priority: 'normal', due: addDays(d, 1) }),
+  ];
+  save(); render(); toast('تم تحميل مهام تجريبية، يمكنك تعديلها أو حذفها');
+}
+
+// ---------- القفل برمز سري (على هذا الجهاز فقط) ----------
+const hasPin = () => !!store.get(PIN_KEY, null);
+async function hashPin(pin) {
+  const text = 'shp-pin:' + pin;
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    let h = 5381; for (const c of text) h = ((h << 5) + h + c.charCodeAt(0)) | 0;
+    return 'f' + (h >>> 0).toString(16);
+  }
+}
+const lockRoot = document.createElement('div');
+lockRoot.dir = 'rtl'; lockRoot.lang = 'ar';
+document.body.appendChild(lockRoot);
+
+function showLock(err = '') {
+  closeModal();
+  app.innerHTML = '';
+  lockRoot.innerHTML = `
+    <div class="lock">
+      <form id="lock-form" class="lock-card" novalidate>
+        <span style="color:var(--accent);display:grid;place-items:center"><i data-lucide="lock-keyhole" style="width:40px;height:40px"></i></span>
+        <h1 class="text-2xl font-bold">مهامي اليومية</h1>
+        <p class="muted">أدخل الرمز السري لفتح التطبيق.</p>
+        <input id="lock-pin" class="input pin num" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-label="الرمز السري">
+        ${err ? `<p class="err" role="alert">${err}</p>` : ''}
+        <button type="submit" class="btn btn-primary w-full">فتح</button>
+        <button type="button" class="move" style="margin-inline:auto;color:var(--muted)" data-action="lock-forgot">نسيت الرمز؟</button>
+        <div id="lock-forgot-box"></div>
+      </form>
+    </div>`;
+  refreshIcons();
+  setTimeout(() => lockRoot.querySelector('#lock-pin')?.focus(), 30);
+}
+
+lockRoot.addEventListener('submit', async e => {
+  e.preventDefault();
+  const pin = lockRoot.querySelector('#lock-pin').value.trim();
+  if ((await hashPin(pin)) === store.get(PIN_KEY, null)) { lockRoot.innerHTML = ''; load(); render(); }
+  else showLock('الرمز غير صحيح.');
+});
+
+lockRoot.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  if (a.dataset.action === 'lock-forgot') {
+    lockRoot.querySelector('#lock-forgot-box').innerHTML = `
+      <p class="text-sm muted mb-2">لا يمكن استرجاع الرمز. يمكنك مسح كل المهام من هذا الجهاز والبدء من جديد.</p>
+      <button type="button" class="btn btn-danger w-full" data-action="lock-wipe">مسح كل البيانات والبدء من جديد</button>`;
+  }
+  if (a.dataset.action === 'lock-wipe') {
+    try { Object.keys(localStorage).filter(k => k.startsWith('shp:')).forEach(k => localStorage.removeItem(k)); } catch {}
+    Object.keys(memStore).forEach(k => delete memStore[k]);
+    store.set('shp:v2:migrated', true);
+    lockRoot.innerHTML = ''; load(); render(); toast('تم مسح البيانات');
+  }
+});
+
+// ---------- نقل البيانات: نسخة احتياطية تُنقل بين الأجهزة والروابط ----------
+function exportData() {
+  const tasks = {};
+  SCHOOLS.forEach(sc => { tasks[sc.id] = sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), []); });
+  return JSON.stringify({ app: 'school-health-planner', v: 2, at: new Date().toISOString(), preparer: state.preparer, tasks });
+}
+
+function importData(text) {
+  let data;
+  try { data = JSON.parse(text.trim()); } catch { return 'النص ليس نسخة احتياطية صحيحة. تأكد أنك نسخته كاملاً.'; }
+  if (!data || data.app !== 'school-health-planner' || typeof data.tasks !== 'object') return 'هذه ليست نسخة احتياطية من هذا التطبيق.';
+  let added = 0, updated = 0;
+  SCHOOLS.forEach(sc => {
+    const incoming = Array.isArray(data.tasks[sc.id]) ? data.tasks[sc.id] : [];
+    const current = sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), []);
+    const byId = new Map(current.map(t => [t.id, t]));
+    incoming.forEach(t => { if (!t || !t.id) return; byId.has(t.id) ? updated++ : added++; byId.set(t.id, t); });
+    store.set(tasksKey(sc.id), [...byId.values()]);
+  });
+  if (data.preparer && !state.preparer) { state.preparer = data.preparer; savePrefs(); }
+  load(); render();
+  return { added, updated };
+}
+
+function openBackup() {
+  const json = exportData();
+  const count = Object.values(JSON.parse(json).tasks).reduce((n, l) => n + l.length, 0);
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <div class="sheet max-w-lg p-5 sm:p-6 flex flex-col gap-4">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold flex-1">نقل البيانات</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+        <p class="muted text-sm">المهام محفوظة في هذا المتصفح فقط، لذلك لا تظهر تلقائياً في رابط آخر أو جهاز آخر. انسخ النسخة الاحتياطية من هنا، ثم افتح التطبيق في المكان الآخر والصقها في «استيراد».</p>
+
+        <section class="flex flex-col gap-2">
+          <h3 class="font-bold">١. تصدير من هنا <span class="muted text-sm font-semibold num">(${count} مهمة للمدرستين والبرنامج)</span></h3>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn-primary" data-action="backup-copy"><i data-lucide="copy"></i>نسخ النسخة الاحتياطية</button>
+            ${inFrame ? '' : `<button class="btn" data-action="backup-file"><i data-lucide="download"></i>حفظ كملف</button>`}
+          </div>
+          <textarea id="backup-out" class="input num" rows="3" readonly dir="ltr" style="font-size:12px">${esc(json)}</textarea>
+        </section>
+
+        <section class="flex flex-col gap-2">
+          <h3 class="font-bold">٢. استيراد في المكان الآخر</h3>
+          <textarea id="backup-in" class="input" rows="3" dir="ltr" style="font-size:12px" placeholder="الصق النسخة الاحتياطية هنا"></textarea>
+          <div class="flex flex-wrap gap-2 items-center">
+            <button class="btn btn-primary" data-action="backup-import"><i data-lucide="upload"></i>استيراد</button>
+            <label class="btn" style="cursor:pointer"><i data-lucide="file-up"></i>اختيار ملف<input id="backup-file-in" type="file" accept=".json,application/json,text/plain" class="sr-only"></label>
+          </div>
+          <p class="text-xs muted">الاستيراد يضيف المهام إلى ما هو موجود، ولا يحذف شيئاً. المهمة المكررة تُحدَّث بآخر نسخة.</p>
+          <p id="backup-msg" class="text-sm font-semibold" hidden></p>
+        </section>
+      </div>
+    </div>`;
+  refreshIcons();
+}
+
+function backupResult(r) {
+  const el = modalRoot.querySelector('#backup-msg');
+  if (!el) return;
+  el.hidden = false;
+  if (typeof r === 'string') { el.style.color = 'var(--danger)'; el.textContent = r; return; }
+  el.style.color = 'var(--ok)';
+  el.textContent = `تم الاستيراد: ${r.added} مهمة جديدة، و${r.updated} مهمة محدَّثة.`;
+  toast('تم استيراد المهام');
+}
+
+modalRoot.addEventListener('change', e => {
+  if (e.target.id !== 'backup-file-in' || !e.target.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = () => backupResult(importData(String(reader.result)));
+  reader.readAsText(e.target.files[0]);
+});
+
+function openLockMenu() {
+  const set = hasPin();
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <form id="pin-form" class="sheet max-w-sm p-5 sm:p-6 flex flex-col gap-3" novalidate>
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-bold flex-1">${set ? 'قفل التطبيق' : 'حماية التطبيق برمز سري'}</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+        ${set ? `<button type="button" class="btn btn-primary" data-action="lock-now"><i data-lucide="lock"></i>قفل الآن</button>
+          <p class="text-sm font-semibold muted mt-2">تغيير الرمز</p>` : `<p class="muted text-sm">سيُطلب الرمز في كل مرة تفتح فيها التطبيق على هذا الجهاز.</p>`}
+        <input id="pin-new" class="input pin num" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="رمز جديد" aria-label="رمز جديد من 4 إلى 8 أرقام">
+        <input id="pin-confirm" class="input pin num" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="تأكيد الرمز" aria-label="تأكيد الرمز">
+        <p id="pin-err" class="err" hidden></p>
+        <button type="submit" class="btn ${set ? '' : 'btn-primary'}">${set ? 'حفظ الرمز الجديد' : 'تفعيل القفل'}</button>
+        ${set ? `<button type="button" class="move" style="margin-inline:auto;color:var(--danger)" data-action="pin-remove">إلغاء القفل</button>` : ''}
+      </form>
+    </div>`;
+  refreshIcons();
+}
+
+modalRoot.addEventListener('submit', async e => {
+  if (e.target.id !== 'pin-form') return;
+  e.preventDefault();
+  const a = modalRoot.querySelector('#pin-new').value.trim(), b = modalRoot.querySelector('#pin-confirm').value.trim();
+  const err = !/^\d{4,8}$/.test(a) ? 'اكتب رمزاً من 4 إلى 8 أرقام.' : a !== b ? 'الرمزان غير متطابقين.' : '';
+  const el = modalRoot.querySelector('#pin-err');
+  if (err) { el.textContent = err; el.hidden = false; return; }
+  store.set(PIN_KEY, await hashPin(a));
+  closeModal(); render(); toast('تم تفعيل القفل بالرمز السري');
+});
+
+load();
+if (hasPin()) showLock(); else render();
+window.addEventListener('load', refreshIcons);
+</script>
