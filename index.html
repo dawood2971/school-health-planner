@@ -156,6 +156,24 @@
   #infographic .ig-foot { margin: 16px 32px 0; padding: 14px 0 22px; border-top: 1px dashed #d5dbe1; display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #66727f; font-weight: 600; }
   #infographic .tile { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
   #infographic svg.lucide { width: 20px; height: 20px; }
+  #infographic.ig-week { width: 900px; }
+  #infographic .wk-grid { display: grid; grid-template-columns: 130px 1fr 1fr; border: 1px solid #e2e6eb; border-radius: 14px; overflow: hidden; }
+  #infographic .wk-grid > div { padding: 10px 12px; border-bottom: 1px solid #eef1f4; }
+  #infographic .wk-grid > div:nth-child(3n+2), #infographic .wk-grid > div:nth-child(3n+3) { border-inline-start: 1px solid #eef1f4; }
+  #infographic .wk-th { background: #0b7a6e; color: #ffffff; font-weight: 700; font-size: 14px; }
+  #infographic .wk-day { background: #f4f6f8; display: flex; flex-direction: column; }
+  #infographic .wk-day b { font-size: 15px; }
+  #infographic .wk-day small { font-size: 12.5px; color: #66727f; font-weight: 600; }
+  #infographic .wk-today { background: #e3f3f0; }
+  #infographic .wk-item { display: flex; gap: 8px; align-items: flex-start; }
+  #infographic .wk-item + .wk-item { margin-top: 8px; }
+  #infographic .wk-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; margin-top: 8px; }
+  #infographic .wk-title { font-weight: 700; font-size: 14px; line-height: 1.45; }
+  #infographic .wk-meta { font-size: 12px; color: #66727f; font-weight: 600; }
+  #infographic .wk-none { color: #b8c1cb; }
+  #infographic .wk-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12.5px; color: #66727f; font-weight: 600; }
+  #infographic .wk-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+  #infographic .wk-legend .wk-dot { margin-top: 0; }
   /* أثناء التصدير فقط: html2canvas يرسم النص أدنى قليلاً داخل الشارات */
   #infographic.capturing .ig-pill { padding: 4px 12px 13px; }
 
@@ -413,6 +431,7 @@ function upcomingSection() {
         <h2 id="up-h" class="font-bold text-[17px]">خطة الأسبوع</h2>
         <span class="text-sm muted font-semibold num">${esc(fmtDayMonth(start))} – ${esc(fmtDayMonth(end))}</span>
         <div class="flex items-center gap-1 ms-auto">
+          <button class="move" data-action="week-export"><i data-lucide="image-down"></i>تصدير جدول الأسبوع</button>
           ${weekOffset !== 0 ? `<button class="move" data-action="week-now">هذا الأسبوع</button>` : ''}
           <button class="icon-btn" data-action="week" data-n="-1" aria-label="الأسبوع السابق"><i data-lucide="chevron-right"></i></button>
           <button class="icon-btn" data-action="week" data-n="1" aria-label="الأسبوع التالي"><i data-lucide="chevron-left"></i></button>
@@ -619,6 +638,64 @@ function validate() {
 
 function closeModal() { modalRoot.innerHTML = ''; draft = null; confirmAction = null; }
 
+// جدول أسبوعي يجمع المدرستين: صف لكل يوم وعمود لكل مدرسة
+function weekReportHTML() {
+  const days = weekDays(weekOffset);
+  const data = SCHOOLS.map(sc => ({ ...sc, tasks: sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), []) }));
+  const forDay = (sc, d) => sc.tasks.filter(t => t.due === d)
+    .sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
+  const shown = days.filter(d => !isWeekend(d) || data.some(sc => forDay(sc, d).length));
+  const all = data.flatMap(sc => sc.tasks.filter(t => days.includes(t.due)));
+  const done = all.filter(t => t.status === 'done').length;
+  const cell = (sc, d) => {
+    const list = forDay(sc, d);
+    if (!list.length) return `<div class="wk-none">—</div>`;
+    return list.map(t => {
+      const T = typeOf(t), P = prioOf(t), isDone = t.status === 'done';
+      const grades = (t.grades || []).slice().sort((a, b) => a - b).map(gradeName).join('، ');
+      return `
+        <div class="wk-item">
+          <span class="wk-dot" style="background:${isDone ? '#15803d' : P.fg}"></span>
+          <div style="min-width:0">
+            <div class="wk-title" style="${isDone ? 'color:#66727f' : ''}">${isDone ? '✓ ' : ''}${esc(titleOf(t))}</div>
+            <div class="wk-meta">${esc([T.label, grades].filter(Boolean).join(' · '))}</div>
+          </div>
+        </div>`;
+    }).join('');
+  };
+  return `
+    <div id="infographic" class="ig-week" dir="rtl" lang="ar">
+      <div class="ig-head">
+        <div style="min-width:0">
+          <div class="ig-sub" style="font-weight:600">الخطة الأسبوعية · الصحة المدرسية</div>
+          <div class="ig-title">جدول الأسبوع للمدرستين</div>
+          <div class="ig-sub num" style="margin-top:4px">${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[6]))} ${fromIso(days[6]).getFullYear()}</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0">
+          <div style="font-size:34px;font-weight:700;line-height:1.1" class="num">${all.length}</div>
+          <div class="ig-sub" style="font-weight:600">مهمة · <span class="num">${done}</span> منجزة</div>
+        </div>
+      </div>
+      <div class="ig-body">
+        <div class="wk-grid">
+          <div class="wk-th">اليوم</div>
+          ${data.map(sc => `<div class="wk-th">${esc(sc.name)}</div>`).join('')}
+          ${shown.map(d => `
+            <div class="wk-day${d === today() ? ' wk-today' : ''}"><b>${esc(fmtWeekday(d))}</b><small class="num">${esc(fmtDayMonth(d))}</small></div>
+            ${data.map(sc => `<div class="wk-cell${d === today() ? ' wk-today' : ''}">${cell(sc, d)}</div>`).join('')}`).join('')}
+        </div>
+        <div class="wk-legend">
+          ${Object.values(PRIORITIES).map(P => `<span><span class="wk-dot" style="background:${P.fg}"></span>${P.label}</span>`).join('')}
+          <span><span class="wk-dot" style="background:#15803d"></span>منجزة</span>
+        </div>
+      </div>
+      <div class="ig-foot">
+        <span>المعدّ: <span id="ig-preparer-out">${esc(state.preparer.trim() || '—')}</span></span>
+        <span class="num">${all.length ? Math.round((done / all.length) * 100) : 0}% من مهام الأسبوع منجزة</span>
+      </div>
+    </div>`;
+}
+
 function openConfirm(title, text, okLabel, onOk) {
   confirmAction = onOk;
   modalRoot.innerHTML = `
@@ -781,12 +858,16 @@ function infographicHTML() {
     </div>`;
 }
 
-function openInfographic() {
+let exportName = '';
+function openInfographic(kind = 'day') {
+  exportName = kind === 'week'
+    ? `school-health-week-${weekDays(weekOffset)[0]}.png`
+    : `school-health-report-${state.school}-${today()}.png`;
   modalRoot.innerHTML = `
     <div class="overlay" data-action="close-overlay">
       <div class="sheet p-4 sm:p-6 flex flex-col gap-4" style="max-width:840px">
         <div class="flex items-center gap-3">
-          <h2 class="text-xl font-bold flex-1">تقرير اليوم</h2>
+          <h2 class="text-xl font-bold flex-1">${kind === 'week' ? 'جدول الأسبوع للمدرستين' : 'تقرير اليوم'}</h2>
           <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
         </div>
         <div class="flex flex-wrap items-end gap-3">
@@ -799,7 +880,7 @@ function openInfographic() {
         </div>
         <div id="ig-image-out" hidden></div>
         <div style="overflow-x:auto;border-radius:22px;background:var(--column);padding:8px">
-          ${infographicHTML()}
+          ${kind === 'week' ? weekReportHTML() : infographicHTML()}
         </div>
       </div>
     </div>`;
@@ -820,7 +901,7 @@ async function generateImage() {
     const url = canvas.toDataURL('image/png');
     if (!inFrame) {
       const a = document.createElement('a');
-      a.href = url; a.download = `school-health-report-${state.school}-${today()}.png`;
+      a.href = url; a.download = exportName;
       document.body.appendChild(a); a.click(); a.remove();
       toast('تم حفظ الصورة');
     }
@@ -852,6 +933,7 @@ app.addEventListener('click', e => {
   if (act === 'add') openForm(newTask(a.dataset.type));
   if (act === 'add-on') openForm({ ...newTask('custom'), due: a.dataset.d });
   if (act === 'week') { weekOffset += +a.dataset.n; render(); }
+  if (act === 'week-export') openInfographic('week');
   if (act === 'week-now') { weekOffset = 0; render(); }
   if (act === 'infographic') openInfographic();
   if (act === 'sample') loadSample();
