@@ -133,6 +133,9 @@
   .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(16, 24, 40, .45); display: flex; align-items: flex-end; justify-content: center; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
   @media (min-width: 640px) { .overlay { align-items: center; } }
   .sheet { width: 100%; max-height: calc(100% - 8px); overflow: auto; background: var(--surface); border-radius: 20px; box-shadow: 0 20px 50px rgba(16, 24, 40, .2); }
+  .lock { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); }
+  .lock-card { width: 100%; max-width: 360px; text-align: center; display: flex; flex-direction: column; gap: 14px; }
+  .pin { text-align: center; font-size: 26px; letter-spacing: .4em; font-weight: 700; }
   .toast { position: fixed; z-index: 60; bottom: max(18px, env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; white-space: nowrap; }
 
   /* بطاقة الإنفوجرافيك: ألوان ثابتة لأنها تُصدَّر صورةً وتُطبع */
@@ -284,6 +287,7 @@ const store = {
 };
 const tasksKey = school => `shp:v2:tasks:${school}`;
 const PREFS_KEY = 'shp:v2:prefs';
+const PIN_KEY = 'shp:v2:pin';
 
 // ---------- التاريخ ----------
 const pad = n => String(n).padStart(2, '0');
@@ -403,6 +407,7 @@ function render() {
           <p class="muted font-medium">${esc(school.name)}</p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <button class="btn" data-action="lock-menu" aria-label="قفل التطبيق"><i data-lucide="lock"></i>${hasPin() ? 'قفل' : 'حماية برمز'}</button>
           <button class="btn" data-action="infographic"><i data-lucide="chart-pie"></i>تقرير اليوم</button>
           <button class="btn btn-primary" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
         </div>
@@ -888,6 +893,7 @@ modalRoot.addEventListener('change', e => {
 });
 
 modalRoot.addEventListener('submit', e => {
+  if (e.target.id !== 'task-form') return;
   e.preventDefault();
   readForm();
   formError = validate();
@@ -925,6 +931,8 @@ modalRoot.addEventListener('click', e => {
   if (act === 'fweek') { formWeek += +a.dataset.n; refreshDayStrip(); }
   if (act === 'sugg') { const inp = modalRoot.querySelector('#f-title'); inp.value = a.dataset.v; inp.focus(); }
   if (act === 'gen-image') generateImage();
+  if (act === 'lock-now') showLock();
+  if (act === 'pin-remove') { try { localStorage.removeItem(PIN_KEY); } catch {} delete memStore[PIN_KEY]; closeModal(); render(); toast('تم إلغاء القفل'); }
   if (act === 'wk-style') { weekStyle = a.dataset.v; openInfographic('week'); }
   if (act === 'print') window.print();
 });
@@ -1092,6 +1100,7 @@ app.addEventListener('click', e => {
   if (act === 'week-export') openInfographic('week');
   if (act === 'week-now') { weekOffset = 0; render(); }
   if (act === 'infographic') openInfographic();
+  if (act === 'lock-menu') openLockMenu();
   if (act === 'sample') loadSample();
   if (act === 'toggle' && t) {
     setStatus(t, t.status === 'done' ? (t.prevStatus || 'today') : 'done');
@@ -1143,8 +1152,99 @@ function loadSample() {
   save(); render(); toast('تم تحميل مهام تجريبية، يمكنك تعديلها أو حذفها');
 }
 
+// ---------- القفل برمز سري (على هذا الجهاز فقط) ----------
+const hasPin = () => !!store.get(PIN_KEY, null);
+async function hashPin(pin) {
+  const text = 'shp-pin:' + pin;
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    let h = 5381; for (const c of text) h = ((h << 5) + h + c.charCodeAt(0)) | 0;
+    return 'f' + (h >>> 0).toString(16);
+  }
+}
+const lockRoot = document.createElement('div');
+lockRoot.dir = 'rtl'; lockRoot.lang = 'ar';
+document.body.appendChild(lockRoot);
+
+function showLock(err = '') {
+  closeModal();
+  app.innerHTML = '';
+  lockRoot.innerHTML = `
+    <div class="lock">
+      <form id="lock-form" class="lock-card" novalidate>
+        <span style="color:var(--accent);display:grid;place-items:center"><i data-lucide="lock-keyhole" style="width:40px;height:40px"></i></span>
+        <h1 class="text-2xl font-bold">مهامي اليومية</h1>
+        <p class="muted">أدخل الرمز السري لفتح التطبيق.</p>
+        <input id="lock-pin" class="input pin num" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-label="الرمز السري">
+        ${err ? `<p class="err" role="alert">${err}</p>` : ''}
+        <button type="submit" class="btn btn-primary w-full">فتح</button>
+        <button type="button" class="move" style="margin-inline:auto;color:var(--muted)" data-action="lock-forgot">نسيت الرمز؟</button>
+        <div id="lock-forgot-box"></div>
+      </form>
+    </div>`;
+  refreshIcons();
+  setTimeout(() => lockRoot.querySelector('#lock-pin')?.focus(), 30);
+}
+
+lockRoot.addEventListener('submit', async e => {
+  e.preventDefault();
+  const pin = lockRoot.querySelector('#lock-pin').value.trim();
+  if ((await hashPin(pin)) === store.get(PIN_KEY, null)) { lockRoot.innerHTML = ''; load(); render(); }
+  else showLock('الرمز غير صحيح.');
+});
+
+lockRoot.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  if (a.dataset.action === 'lock-forgot') {
+    lockRoot.querySelector('#lock-forgot-box').innerHTML = `
+      <p class="text-sm muted mb-2">لا يمكن استرجاع الرمز. يمكنك مسح كل المهام من هذا الجهاز والبدء من جديد.</p>
+      <button type="button" class="btn btn-danger w-full" data-action="lock-wipe">مسح كل البيانات والبدء من جديد</button>`;
+  }
+  if (a.dataset.action === 'lock-wipe') {
+    try { Object.keys(localStorage).filter(k => k.startsWith('shp:')).forEach(k => localStorage.removeItem(k)); } catch {}
+    Object.keys(memStore).forEach(k => delete memStore[k]);
+    store.set('shp:v2:migrated', true);
+    lockRoot.innerHTML = ''; load(); render(); toast('تم مسح البيانات');
+  }
+});
+
+function openLockMenu() {
+  const set = hasPin();
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <form id="pin-form" class="sheet max-w-sm p-5 sm:p-6 flex flex-col gap-3" novalidate>
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-bold flex-1">${set ? 'قفل التطبيق' : 'حماية التطبيق برمز سري'}</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+        ${set ? `<button type="button" class="btn btn-primary" data-action="lock-now"><i data-lucide="lock"></i>قفل الآن</button>
+          <p class="text-sm font-semibold muted mt-2">تغيير الرمز</p>` : `<p class="muted text-sm">سيُطلب الرمز في كل مرة تفتح فيها التطبيق على هذا الجهاز.</p>`}
+        <input id="pin-new" class="input pin num" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="رمز جديد" aria-label="رمز جديد من 4 إلى 8 أرقام">
+        <input id="pin-confirm" class="input pin num" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="تأكيد الرمز" aria-label="تأكيد الرمز">
+        <p id="pin-err" class="err" hidden></p>
+        <button type="submit" class="btn ${set ? '' : 'btn-primary'}">${set ? 'حفظ الرمز الجديد' : 'تفعيل القفل'}</button>
+        ${set ? `<button type="button" class="move" style="margin-inline:auto;color:var(--danger)" data-action="pin-remove">إلغاء القفل</button>` : ''}
+      </form>
+    </div>`;
+  refreshIcons();
+}
+
+modalRoot.addEventListener('submit', async e => {
+  if (e.target.id !== 'pin-form') return;
+  e.preventDefault();
+  const a = modalRoot.querySelector('#pin-new').value.trim(), b = modalRoot.querySelector('#pin-confirm').value.trim();
+  const err = !/^\d{4,8}$/.test(a) ? 'اكتب رمزاً من 4 إلى 8 أرقام.' : a !== b ? 'الرمزان غير متطابقين.' : '';
+  const el = modalRoot.querySelector('#pin-err');
+  if (err) { el.textContent = err; el.hidden = false; return; }
+  store.set(PIN_KEY, await hashPin(a));
+  closeModal(); render(); toast('تم تفعيل القفل بالرمز السري');
+});
+
 load();
-render();
+if (hasPin()) showLock(); else render();
 window.addEventListener('load', refreshIcons);
 </script>
 </body>
