@@ -39,11 +39,11 @@
 
   /* هوية «بوصلة»: أخضر زيتي أساسي، ذهبي ناعم ثانوي، خلفية رمادية فاتحة */
   /* البانر: صورة البوصلة مع تظليل متدرّج يضمن وضوح النص فوقها */
-  .hero { position: relative; isolation: isolate; overflow: hidden; display: grid; place-items: center; text-align: center; min-height: clamp(340px, 46vw, 480px); padding: 28px 18px; border-radius: 24px; color: #fff; background: #12223a var(--hero-img) center 40% / cover no-repeat; box-shadow: 0 14px 34px rgba(12, 30, 50, .28); }
+  .hero { position: relative; isolation: isolate; overflow: hidden; display: grid; place-items: center; text-align: center; min-height: clamp(230px, 30vw, 320px); padding: 20px 16px; border-radius: 24px; color: #fff; background: #12223a var(--hero-img) center 40% / cover no-repeat; box-shadow: 0 14px 34px rgba(12, 30, 50, .28); }
   .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
       radial-gradient(ellipse 70% 62% at 50% 50%, rgba(8, 18, 32, .62), rgba(8, 18, 32, .2) 70%),
       linear-gradient(180deg, rgba(8, 18, 32, .55) 0%, rgba(8, 18, 32, .28) 45%, rgba(6, 40, 44, .72) 100%); }
-  .hero-inner { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 560px; }
+  .hero-inner { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 560px; }
   .hero-date { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 999px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   .hero-date svg.lucide { width: 15px; height: 15px; }
   .hero-greet { font-weight: 600; color: #f7d98f; text-shadow: 0 1px 8px rgba(0,0,0,.45); }
@@ -487,7 +487,6 @@ function render() {
           <span class="hero-date num"><i data-lucide="calendar-days"></i>${esc(fmtLong(today()))}</span>
           <p class="hero-greet">${greeting()} يا ${OWNER}، أهلاً بك</p>
           <h1>بوصلة</h1>
-          <p class="hero-sub">برنامج الصحة المدرسية والجامعية</p>
           <button class="hero-cta" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
         </div>
       </section>
