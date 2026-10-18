@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوصلة</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;900&family=IBM+Plex+Sans+Arabic:wght@500;600;700&display=swap">
+<style>
+  body { margin: 0; background: #f8fafc; font-family: "IBM Plex Sans Arabic", Tahoma, sans-serif; }
+
+  /* البانر: الصورة في الخلفية تغطي المساحة على كل الشاشات */
+  .hero {
+    position: relative; isolation: isolate; overflow: hidden;
+    display: grid; place-items: center; text-align: center;
+    min-height: clamp(340px, 46vw, 520px);
+    padding: 32px 16px;
+    color: #fff;
+    background: #12223a url("hero.jpg") center 40% / cover no-repeat;
+  }
+  /* طبقة التظليل: تدرّج داكن خفيف لوضوح النص */
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background:
+      radial-gradient(ellipse 70% 62% at 50% 50%, rgba(8, 18, 32, .62), rgba(8, 18, 32, .2) 70%),
+      linear-gradient(180deg, rgba(8, 18, 32, .55) 0%, rgba(8, 18, 32, .28) 45%, rgba(6, 40, 44, .72) 100%);
+  }
+  .hero-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 600px; }
+  .hero h1 {
+    margin: 0; font-family: "Cairo", sans-serif; font-weight: 900;
+    font-size: clamp(40px, 9vw, 68px); line-height: 1.1;
+    text-shadow: 0 4px 22px rgba(0, 0, 0, .5);
+  }
+  .hero p {
+    margin: 0; font-size: clamp(15px, 3.6vw, 19px); font-weight: 500; color: #e3eef5;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, .5);
+  }
+  .hero-cta {
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 8px;
+    min-height: 52px; padding: 0 28px; border-radius: 999px; border: 0; cursor: pointer;
+    font: 700 16px "IBM Plex Sans Arabic", sans-serif; color: #1f2a14; text-decoration: none;
+    background: linear-gradient(135deg, #f5d27a, #d99a1e);
+    box-shadow: 0 8px 24px rgba(217, 154, 30, .38);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(217, 154, 30, .46); }
+  .hero-cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <h1>بوصلة</h1>
+      <p>برنامج الصحة المدرسية والجامعية</p>
+      <a class="hero-cta" href="#start">ابدأ الآن</a>
+    </div>
+  </header>
+</body>
+</html>
