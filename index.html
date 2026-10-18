@@ -212,6 +212,9 @@ function fmtDue(s) {
   if (s === addDays(t, -1)) return 'أمس';
   return fmtShort(s);
 }
+const fmtDay = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(fromIso(s));
+// الأحد القادم: بداية أسبوع الدوام التالي
+const nextSunday = () => { const d = fromIso(today()); return addDays(today(), 7 - d.getDay() || 7); };
 function fmtTime(t) {
   const [h, m] = t.split(':').map(Number);
   return `${pad(((h + 11) % 12) + 1)}:${pad(m)} ${h < 12 ? 'ص' : 'م'}`;
@@ -227,6 +230,7 @@ function rgba(hex, a) {
 const gradeName = g => `الصف ${GRADES[g]}`;
 const typeOf = t => TYPES[t.type] || TYPES.custom;
 const prioOf = t => PRIORITIES[t.priority] || PRIORITIES.normal;
+const isUpcoming = t => t.status === 'today' && !!t.due && t.due > today();
 const titleOf = t => (t.title && t.title.trim()) || typeOf(t).defaultTitle || typeOf(t).label;
 const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
 const refreshIcons = () => { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 } }); };
@@ -283,7 +287,7 @@ function stats() {
   return { total: scope.length, done, left: scope.length - done, pct: scope.length ? Math.round((done / scope.length) * 100) : 0 };
 }
 function columnTasks(key, list = state.tasks) {
-  const items = list.filter(t => t.status === key);
+  const items = list.filter(t => t.status === key && !isUpcoming(t));
   if (key === 'done') return items.sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '') || b.created - a.created);
   return items.sort((a, b) => prioOf(a).rank - prioOf(b).rank || (a.due || '').localeCompare(b.due || '') || a.created - b.created);
 }
@@ -333,6 +337,7 @@ function render() {
     <main class="grid gap-5 lg:grid-cols-3 items-start mt-7">
       ${Object.keys(COLUMNS).map(column).join('')}
     </main>
+    ${upcomingSection()}
     ${state.tasks.length === 0 ? `
       <div class="text-center mt-6">
         <button class="btn" data-action="sample"><i data-lucide="file-text"></i>تحميل مهام تجريبية لرؤية الشكل</button>
@@ -354,6 +359,28 @@ function column(key) {
       ${list.length
         ? `<ul class="flex flex-col gap-3">${list.map(taskCard).join('')}</ul>`
         : `<p class="empty">${key === 'today' ? 'لا توجد مهام بعد. اضغط «إضافة مهمة» للبدء.' : key === 'progress' ? 'لا توجد مهام قيد التنفيذ.' : 'المهام التي تُتمّها تظهر هنا.'}</p>`}
+    </section>`;
+}
+
+function upcomingSection() {
+  const list = state.tasks.filter(isUpcoming)
+    .sort((a, b) => a.due.localeCompare(b.due) || prioOf(a).rank - prioOf(b).rank || a.created - b.created);
+  const groups = [];
+  list.forEach(t => { const g = groups[groups.length - 1]; g && g.due === t.due ? g.items.push(t) : groups.push({ due: t.due, items: [t] }); });
+  return `
+    <section class="mt-8" aria-labelledby="up-h">
+      <div class="col-head mb-3">
+        <span style="color:#6d28d9"><i data-lucide="calendar-range"></i></span>
+        <h2 id="up-h" class="font-bold text-[17px]">المهام القادمة</h2>
+        <span class="count num" style="background:var(--column)">${list.length}</span>
+        <button class="move ms-auto" data-action="add-upcoming"><i data-lucide="plus"></i>إضافة مهمة قادمة</button>
+      </div>
+      ${groups.length ? groups.map(g => `
+        <div class="mb-5">
+          <h3 class="text-sm font-bold muted mb-2 num">${esc(fmtDay(g.due))}${g.due === addDays(today(), 1) ? ' · غداً' : ''}</h3>
+          <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 items-start">${g.items.map(taskCard).join('')}</ul>
+        </div>`).join('')
+        : `<p class="empty">خطّط لأسبوعك: أضف مهمة بتاريخ قادم وستظهر هنا، ثم تنتقل إلى «مهام اليوم» تلقائياً في يومها.</p>`}
     </section>`;
 }
 
@@ -385,7 +412,7 @@ function taskCard(t) {
             </div>
             ${grades.length ? `<div class="flex flex-wrap gap-1 mt-2">${grades.map(g => `<span class="chip">${gradeName(g)}</span>`).join('')}</div>` : ''}
           </div>
-          ${t.status === 'today' ? `<div class="mt-2"><button class="move" data-action="move" data-to="progress"><i data-lucide="arrow-left"></i>نقل إلى قيد التنفيذ</button></div>` : ''}
+          ${t.status === 'today' && !isUpcoming(t) ? `<div class="mt-2"><button class="move" data-action="move" data-to="progress"><i data-lucide="arrow-left"></i>نقل إلى قيد التنفيذ</button></div>` : ''}
           ${t.status === 'progress' ? `<div class="mt-2"><button class="move" data-action="move" data-to="today"><i data-lucide="undo-2"></i>إعادة إلى مهام اليوم</button></div>` : ''}
         </div>
       </div>
@@ -442,6 +469,10 @@ function renderForm() {
           <div>
             <label class="lbl" for="f-due">تاريخ الاستحقاق</label>
             <input id="f-due" type="date" class="input num" value="${esc(draft.due)}">
+            <div class="flex flex-wrap gap-2 mt-2">
+              ${[['اليوم', today()], ['غداً', addDays(today(), 1)], ['الأحد القادم', nextSunday()]].map(([l, d]) => `<button type="button" class="sugg" data-action="due-quick" data-d="${d}">${l}</button>`).join('')}
+            </div>
+            <p id="f-due-hint" class="text-xs font-semibold mt-1.5" style="color:#6d28d9" ${draft.due > today() && draft.status === 'today' ? '' : 'hidden'}>ستظهر في «المهام القادمة» حتى يحين موعدها.</p>
           </div>
           <div>
             <label class="lbl" for="f-type">التصنيف</label>
@@ -525,7 +556,15 @@ function setStatus(t, status) {
   t.status = status;
 }
 
+function updateDueHint() {
+  const due = modalRoot.querySelector('#f-due')?.value;
+  const status = (modalRoot.querySelector('input[name=status]:checked') || {}).value;
+  const hint = modalRoot.querySelector('#f-due-hint');
+  if (hint) hint.hidden = !(due && due > today() && status === 'today');
+}
+
 modalRoot.addEventListener('change', e => {
+  if (draft && (e.target.id === 'f-due' || e.target.name === 'status')) updateDueHint();
   if (!draft || e.target.id !== 'f-type') return;
   readForm();
   draft.type = e.target.value;
@@ -551,7 +590,7 @@ modalRoot.addEventListener('submit', e => {
     toast('تم حفظ التعديلات');
   } else {
     state.tasks.push(t);
-    toast('تمت إضافة المهمة');
+    toast(isUpcoming(t) ? `أُضيفت إلى المهام القادمة (${fmtDue(t.due)})` : 'تمت إضافة المهمة');
   }
   save(); closeModal(); render();
 });
@@ -563,6 +602,7 @@ modalRoot.addEventListener('click', e => {
   if (act === 'close-overlay' && e.target !== a) return;
   if (act === 'close' || act === 'close-overlay') closeModal();
   if (act === 'confirm-ok') { const fn = confirmAction; closeModal(); fn && fn(); }
+  if (act === 'due-quick') { modalRoot.querySelector('#f-due').value = a.dataset.d; updateDueHint(); }
   if (act === 'sugg') { const inp = modalRoot.querySelector('#f-title'); inp.value = a.dataset.v; inp.focus(); }
   if (act === 'gen-image') generateImage();
   if (act === 'print') window.print();
@@ -716,6 +756,7 @@ app.addEventListener('click', e => {
 
   if (act === 'school') { state.school = a.dataset.id; savePrefs(); load(); render(); }
   if (act === 'add') openForm(newTask(a.dataset.type));
+  if (act === 'add-upcoming') openForm({ ...newTask('custom'), due: addDays(today(), 1) });
   if (act === 'infographic') openInfographic();
   if (act === 'sample') loadSample();
   if (act === 'toggle' && t) {
