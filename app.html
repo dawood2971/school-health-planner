@@ -326,6 +326,8 @@ const isUpcoming = t => t.status === 'today' && !!t.due && t.due > today();
 const schoolGrades = () => SCHOOLS.find(s => s.id === state.school).grades;
 const titleOf = t => (t.title && t.title.trim()) || typeOf(t).defaultTitle || typeOf(t).label;
 const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
+// داخل عارض Claude لا تعمل روابط التنزيل العادية، فنحفظ الملفات عبر قدرة التنزيل في العارض
+const downloadsReady = inFrame && window.claude?.use ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
 const refreshIcons = () => { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 } }); };
 
 // ---------- نقل بيانات الإصدار السابق (مهام مرتبطة بيوم وفترة) ----------
@@ -1071,6 +1073,17 @@ async function generateImage() {
     const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
       .finally(() => card.classList.remove('capturing'));
     const url = canvas.toDataURL('image/png');
+    let saved = false;
+    const downloads = await downloadsReady;
+    if (downloads) {
+      try {
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        await downloads.save({ filename: exportName, data: blob });
+        saved = true; toast('تم حفظ الصورة');
+      } catch (err) {
+        toast(err?.code === 'declined' ? 'تم إلغاء الحفظ' : 'تعذر الحفظ المباشر، احفظ الصورة أدناه يدوياً');
+      }
+    }
     if (!inFrame) {
       const a = document.createElement('a');
       a.href = url; a.download = exportName;
@@ -1079,7 +1092,7 @@ async function generateImage() {
     }
     out.hidden = false;
     out.innerHTML = `
-      <p class="text-sm font-semibold muted mb-2">${inFrame
+      <p class="text-sm font-semibold muted mb-2">${saved ? 'تم حفظ الصورة. يمكنك أيضاً حفظ النسخة أدناه يدوياً.' : inFrame
         ? 'الصورة جاهزة: اضغط عليها مطولاً (في الجوال) أو انقر بالزر الأيمن واختر «حفظ الصورة».'
         : 'تم تنزيل الصورة. يمكنك أيضاً حفظ النسخة أدناه يدوياً.'}</p>
       <img src="${url}" alt="بطاقة تقرير اليوم" style="width:100%;max-width:520px;border-radius:14px;border:1px solid var(--line)">`;
