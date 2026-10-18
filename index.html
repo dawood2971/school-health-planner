@@ -7,7 +7,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -174,8 +174,50 @@
   #infographic .wk-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12.5px; color: #66727f; font-weight: 600; }
   #infographic .wk-legend > span { display: inline-flex; align-items: center; gap: 6px; }
   #infographic .wk-legend .wk-dot { margin-top: 0; }
-  /* أثناء التصدير فقط: html2canvas يرسم النص أدنى قليلاً داخل الشارات */
-  #infographic.capturing .ig-pill { padding: 4px 12px 13px; }
+  /* إنفوجرافيك الأسبوع بأسلوب الملصق: كريمي + مرجاني + رمادي فحمي */
+  #infographic.poster { width: 860px; background: #f3ede4; color: #48484a; border: none; border-radius: 0; font-family: "Cairo", var(--font); padding: 44px 44px 30px; }
+  .poster, .poster * { line-height: normal !important; }
+  .poster .p-rule { height: 3px; background: #48484a; }
+  .poster .p-thin { height: 1px; background: #cfc5b8; }
+  .poster .p-kicker { font-size: 15px; font-weight: 700; color: #e2725b; }
+  .poster .p-title { font-size: 66px; font-weight: 900; margin: -16px 0 -14px; }
+  .poster .p-title span { color: #e2725b; }
+  .poster .p-sub { font-size: 17px; font-weight: 600; color: #7a7470; }
+  .poster .p-row { display: flex; gap: 28px; align-items: stretch; }
+  .poster .p-h { font-size: 24px; font-weight: 900; color: #e2725b; line-height: 1.3; }
+  .poster .p-h.dark { color: #48484a; }
+  .poster .p-big { font-size: 128px; font-weight: 900; color: #48484a; margin: -52px 0 -58px; }
+  .poster .p-big small { font-size: 64px; }
+  .poster .p-mid { font-size: 58px; font-weight: 900; line-height: 1.05; color: #e2725b; }
+  .poster .p-cap { font-size: 21px; font-weight: 900; line-height: 1.35; color: #e2725b; }
+  .poster .p-cap.dark { color: #48484a; }
+  .poster .p-note { font-size: 13.5px; font-weight: 600; color: #7a7470; line-height: 1.6; }
+  .poster .p-ent { flex: 1; text-align: center; }
+  .poster .p-ent b { display: block; font-size: 46px; font-weight: 900; margin: -12px 0 -14px; }
+  .poster .p-ent span { font-size: 14px; font-weight: 700; }
+  .poster .p-bar { height: 8px; background: #e6ddd1; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .poster .p-bar i { display: block; height: 100%; background: #e2725b; border-radius: 99px; }
+  .poster .p-type { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; width: 108px; }
+  .poster .p-type .ring { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 999px; background: #ffffff; border: 2px solid #48484a; color: #e2725b; }
+  .poster .p-type .ring svg.lucide { width: 28px; height: 28px; }
+  .poster .p-type b { font-size: 26px; font-weight: 900; margin: -6px 0 -10px; }
+  .poster .p-type small { font-size: 12.5px; font-weight: 700; }
+  .poster .p-coral { background: #e2725b; color: #ffffff; padding: 22px 24px; }
+  .poster .p-coral .p-h, .poster .p-coral .p-cap { color: #ffffff; }
+  .poster .p-coral .p-note { color: #fde4dc; }
+  .poster .p-day { display: flex; gap: 18px; align-items: flex-start; padding: 14px 0; }
+  .poster .p-day + .p-day { border-top: 1px dashed #cfc5b8; }
+  .poster .p-cal { width: 86px; flex-shrink: 0; background: #ffffff; border: 2px solid #48484a; text-align: center; }
+  .poster .p-cal div { background: #e2725b; color: #ffffff; font-size: 13px; font-weight: 700; }
+  .poster .p-cal b { display: block; font-size: 36px; font-weight: 900; color: #48484a; margin: -6px 0 -8px; }
+  .poster .p-tasks { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+  .poster .p-task { display: inline-flex; align-items: center; gap: 7px; background: #ffffff; border-radius: 6px; padding: 0 10px; font-size: 14px; font-weight: 700; }
+  .poster .p-task em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #ffffff; background: #48484a; border-radius: 4px; padding: 0 6px; }
+  .poster .p-task.done { color: #9a928a; text-decoration: line-through; }
+  .poster .p-dot { width: 9px; height: 9px; border-radius: 99px; flex-shrink: 0; }
+  .poster .p-foot { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; font-weight: 700; color: #7a7470; }
+  /* html2canvas يقيس خط الأساس بصورة مؤقتة بلا alt؛ قاعدة Tailwind (img{display:block}) تفسد القياس فتنزاح النصوص */
+  img:not([alt]) { display: inline !important; }
 
   @media print {
     @page { size: A4; margin: 10mm; }
@@ -199,10 +241,10 @@ document.documentElement.lang = 'ar';
 document.documentElement.dir = 'rtl';
 
 const SCHOOLS = [
-  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء', grades: [5, 6, 7, 8, 9, 10, 11, 12] },
-  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان', grades: [11, 12] },
+  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء', tag: 'أبو الدرداء', grades: [5, 6, 7, 8, 9, 10, 11, 12] },
+  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان', tag: 'سيف بن سلطان', grades: [11, 12] },
   // برنامج وليس مدرسة: بلا صفوف دراسية
-  { id: 'school-uni-program', name: 'برنامج الصحة المدرسية والجامعية', short: 'برنامج الصحة المدرسية والجامعية', grades: [], program: true },
+  { id: 'school-uni-program', name: 'برنامج الصحة المدرسية والجامعية', short: 'برنامج الصحة المدرسية والجامعية', tag: 'البرنامج', grades: [], program: true },
 ];
 const GRADES = { 5: 'الخامس', 6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر', 11: 'الحادي عشر', 12: 'الثاني عشر' };
 const COLUMNS = {
@@ -641,6 +683,110 @@ function validate() {
 
 function closeModal() { modalRoot.innerHTML = ''; draft = null; confirmAction = null; }
 
+// إنفوجرافيك الأسبوع بأسلوب الملصق للمدرستين والبرنامج معاً
+function weekPosterHTML() {
+  const days = weekDays(weekOffset);
+  const data = SCHOOLS.map(sc => ({ ...sc, tasks: (sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), [])).filter(t => days.includes(t.due)) }));
+  const all = data.flatMap(sc => sc.tasks.map(t => ({ ...t, tag: sc.tag })));
+  const done = all.filter(t => t.status === 'done').length;
+  const pct = all.length ? Math.round((done / all.length) * 100) : 0;
+  const byDay = d => all.filter(t => t.due === d).sort((a, b) => (a.status === 'done') - (b.status === 'done') || prioOf(a).rank - prioOf(b).rank);
+  const shown = days.filter(d => !isWeekend(d) || byDay(d).length);
+  const busiest = shown.reduce((m, d) => byDay(d).length > byDay(m).length ? d : m, shown[0]);
+  const prio = Object.entries(PRIORITIES).map(([k, P]) => ({ ...P, n: all.filter(t => (t.priority || 'normal') === k).length }));
+  const types = TYPE_ORDER.map(k => ({ k, T: TYPES[k], n: all.filter(t => (t.type || 'custom') === k).length })).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 6);
+  const top = all.filter(t => t.status !== 'done').sort((a, b) => prioOf(a).rank - prioOf(b).rank || a.due.localeCompare(b.due))[0];
+  const gradesAll = [...new Set(all.flatMap(t => t.grades || []))].sort((a, b) => a - b);
+  const y = fromIso(days[6]).getFullYear();
+  return `
+    <div id="infographic" class="poster" dir="rtl" lang="ar">
+      <div class="p-kicker">الصحة المدرسية · ${esc(fmtDayMonth(days[0]))} – ${esc(fmtDayMonth(days[6]))} ${y}</div>
+      <div class="p-title">خطة <span>الأسبوع</span></div>
+      <div class="p-sub">مدرستا أبو الدرداء والإمام سيف بن سلطان، وبرنامج الصحة المدرسية والجامعية</div>
+      <div class="p-rule" style="margin:18px 0 22px"></div>
+
+      <div class="p-row">
+        <div style="flex:1.1">
+          <div class="p-h dark">مهام الأسبوع</div>
+          <div class="p-big num">${all.length}</div>
+          <div class="p-cap">مهمة موزعة على ${shown.length} ${shown.length > 2 ? 'أيام' : 'يوم'} عمل</div>
+          <div class="p-thin" style="margin:14px 0"></div>
+          <div class="p-note">أكثر الأيام ازدحاماً: <b style="color:#48484a">${esc(fmtWeekday(busiest))}</b> بعدد <span class="num">${byDay(busiest).length}</span> مهام</div>
+        </div>
+        <div style="width:2px;background:#cfc5b8"></div>
+        <div style="flex:1">
+          <div class="p-big num" style="color:#e2725b">${pct}<small>%</small></div>
+          <div class="p-cap dark">من مهام الأسبوع<br>منجزة حتى الآن</div>
+          <div class="p-bar" style="height:12px;margin-top:14px"><i style="width:${pct}%"></i></div>
+          <div class="p-note" style="margin-top:8px"><span class="num">${done}</span> منجزة · <span class="num">${all.length - done}</span> متبقية</div>
+        </div>
+      </div>
+
+      <div class="p-rule" style="margin:24px 0 18px"></div>
+      <div class="p-h">التوزيع حسب الجهة</div>
+      <div class="p-row" style="margin-top:12px;gap:20px">
+        ${data.map(sc => { const d = sc.tasks.filter(t => t.status === 'done').length; return `
+          <div class="p-ent">
+            <b class="num">${sc.tasks.length}</b>
+            <span>${esc(sc.name)}</span>
+            <div class="p-bar"><i style="width:${sc.tasks.length ? Math.round((d / sc.tasks.length) * 100) : 0}%"></i></div>
+          </div>`; }).join('')}
+      </div>
+
+      <div class="p-rule" style="margin:24px 0 18px"></div>
+      <div class="p-row" style="gap:24px">
+        <div style="flex:1.6">
+          <div class="p-h">أنواع المهام</div>
+          <div style="display:flex;flex-wrap:wrap;gap:14px 6px;margin-top:14px">
+            ${types.length ? types.map(x => `
+              <div class="p-type">
+                <span class="ring"><i data-lucide="${x.T.icon}"></i></span>
+                <b class="num">${x.n}</b>
+                <small>${x.T.label}</small>
+              </div>`).join('') : '<div class="p-note">لا توجد مهام هذا الأسبوع.</div>'}
+          </div>
+        </div>
+        <div style="flex:1">
+          <div class="p-h dark">الأولوية</div>
+          ${prio.map(P => `
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+              <span class="p-dot" style="background:${P.fg};width:14px;height:14px"></span>
+              <span style="font-weight:700;font-size:15px;width:64px">${P.label}</span>
+              <div class="p-bar" style="flex:1;margin:0"><i style="width:${all.length ? Math.round((P.n / all.length) * 100) : 0}%;background:${P.fg}"></i></div>
+              <b class="num" style="font-size:20px;font-weight:900;width:28px;text-align:center">${P.n}</b>
+            </div>`).join('')}
+          ${gradesAll.length ? `<div class="p-note" style="margin-top:16px">الصفوف المستهدفة: ${gradesAll.map(g => GRADES[g]).join('، ')}</div>` : ''}
+        </div>
+      </div>
+
+      ${top ? `
+        <div class="p-coral" style="margin-top:26px">
+          <div class="p-cap" style="font-size:16px">أهم مهمة هذا الأسبوع</div>
+          <div style="font-size:32px;font-weight:900;line-height:1.35;margin-top:2px">«${esc(titleOf(top))}»</div>
+          <div class="p-note" style="margin-top:4px">${esc([top.tag, typeOf(top).label, prioOf(top).label, fmtWeekday(top.due) + ' ' + fmtDayMonth(top.due)].join(' · '))}</div>
+        </div>` : ''}
+
+      <div class="p-rule" style="margin:26px 0 6px"></div>
+      <div class="p-h" style="margin-bottom:4px">أيام الأسبوع</div>
+      ${shown.map(d => { const list = byDay(d); return `
+        <div class="p-day">
+          <div class="p-cal"><div>${esc(fmtWeekday(d))}</div><b class="num">${fromIso(d).getDate()}</b></div>
+          <div class="p-tasks">
+            ${list.length ? list.map(t => `
+              <span class="p-task ${t.status === 'done' ? 'done' : ''}">
+                <span class="p-dot" style="background:${t.status === 'done' ? '#9a928a' : prioOf(t).fg}"></span>${esc(titleOf(t))}<em>${esc(t.tag)}</em>
+              </span>`).join('') : '<span class="p-note">لا توجد مهام</span>'}
+          </div>
+        </div>`; }).join('')}
+
+      <div class="p-rule" style="margin:16px 0 12px"></div>
+      <div class="p-foot">
+        <span>المعدّ: <span id="ig-preparer-out">${esc(state.preparer.trim() || '—')}</span></span>
+        <span>الخطة الأسبوعية للصحة المدرسية</span>
+      </div>
+    </div>`;
+}
+
 // جدول أسبوعي يجمع المدرستين: صف لكل يوم وعمود لكل مدرسة
 function weekReportHTML() {
   const days = weekDays(weekOffset);
@@ -779,6 +925,7 @@ modalRoot.addEventListener('click', e => {
   if (act === 'fweek') { formWeek += +a.dataset.n; refreshDayStrip(); }
   if (act === 'sugg') { const inp = modalRoot.querySelector('#f-title'); inp.value = a.dataset.v; inp.focus(); }
   if (act === 'gen-image') generateImage();
+  if (act === 'wk-style') { weekStyle = a.dataset.v; openInfographic('week'); }
   if (act === 'print') window.print();
 });
 
@@ -862,13 +1009,14 @@ function infographicHTML() {
 }
 
 let exportName = '';
+let weekStyle = 'poster';
 function openInfographic(kind = 'day') {
   exportName = kind === 'week'
     ? `school-health-week-${weekDays(weekOffset)[0]}.png`
     : `school-health-report-${state.school}-${today()}.png`;
   modalRoot.innerHTML = `
     <div class="overlay" data-action="close-overlay">
-      <div class="sheet p-4 sm:p-6 flex flex-col gap-4" style="max-width:840px">
+      <div class="sheet p-4 sm:p-6 flex flex-col gap-4" style="max-width:960px">
         <div class="flex items-center gap-3">
           <h2 class="text-xl font-bold flex-1">${kind === 'week' ? 'جدول الأسبوع للمدرستين والبرنامج' : 'تقرير اليوم'}</h2>
           <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
@@ -881,9 +1029,14 @@ function openInfographic(kind = 'day') {
           <button class="btn btn-primary" data-action="gen-image"><i data-lucide="image-down"></i>حفظ كصورة</button>
           ${inFrame ? '' : `<button class="btn" data-action="print"><i data-lucide="printer"></i>طباعة / PDF</button>`}
         </div>
+        ${kind === 'week' ? `
+          <div class="seg" style="max-width:360px">
+            <button data-action="wk-style" data-v="poster" class="${weekStyle === 'poster' ? 'on' : ''}">إنفوجرافيك</button>
+            <button data-action="wk-style" data-v="table" class="${weekStyle === 'table' ? 'on' : ''}">جدول</button>
+          </div>` : ''}
         <div id="ig-image-out" hidden></div>
         <div style="overflow-x:auto;border-radius:22px;background:var(--column);padding:8px">
-          ${kind === 'week' ? weekReportHTML() : infographicHTML()}
+          ${kind === 'week' ? (weekStyle === 'poster' ? weekPosterHTML() : weekReportHTML()) : infographicHTML()}
         </div>
       </div>
     </div>`;
