@@ -407,6 +407,7 @@ function render() {
           <p class="muted font-medium">${esc(school.name)}</p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <button class="btn" data-action="backup"><i data-lucide="database-backup"></i>نقل البيانات</button>
           <button class="btn" data-action="lock-menu" aria-label="قفل التطبيق"><i data-lucide="lock"></i>${hasPin() ? 'قفل' : 'حماية برمز'}</button>
           <button class="btn" data-action="infographic"><i data-lucide="chart-pie"></i>تقرير اليوم</button>
           <button class="btn btn-primary" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
@@ -932,6 +933,20 @@ modalRoot.addEventListener('click', e => {
   if (act === 'sugg') { const inp = modalRoot.querySelector('#f-title'); inp.value = a.dataset.v; inp.focus(); }
   if (act === 'gen-image') generateImage();
   if (act === 'lock-now') showLock();
+  if (act === 'backup-copy') {
+    const ta = modalRoot.querySelector('#backup-out');
+    const done = () => toast('تم النسخ، الصقها في التطبيق الآخر');
+    try { navigator.clipboard.writeText(ta.value).then(done, () => { ta.select(); toast('النص محدد، انسخه يدوياً'); }); }
+    catch { ta.select(); toast('النص محدد، انسخه يدوياً'); }
+  }
+  if (act === 'backup-file') {
+    const url = URL.createObjectURL(new Blob([modalRoot.querySelector('#backup-out').value], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = `school-health-backup-${today()}.json`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  if (act === 'backup-import') backupResult(importData(modalRoot.querySelector('#backup-in').value));
   if (act === 'pin-remove') { try { localStorage.removeItem(PIN_KEY); } catch {} delete memStore[PIN_KEY]; closeModal(); render(); toast('تم إلغاء القفل'); }
   if (act === 'wk-style') { weekStyle = a.dataset.v; openInfographic('week'); }
   if (act === 'print') window.print();
@@ -1101,6 +1116,7 @@ app.addEventListener('click', e => {
   if (act === 'week-now') { weekOffset = 0; render(); }
   if (act === 'infographic') openInfographic();
   if (act === 'lock-menu') openLockMenu();
+  if (act === 'backup') openBackup();
   if (act === 'sample') loadSample();
   if (act === 'toggle' && t) {
     setStatus(t, t.status === 'done' ? (t.prevStatus || 'today') : 'done');
@@ -1209,6 +1225,83 @@ lockRoot.addEventListener('click', e => {
     store.set('shp:v2:migrated', true);
     lockRoot.innerHTML = ''; load(); render(); toast('تم مسح البيانات');
   }
+});
+
+// ---------- نقل البيانات: نسخة احتياطية تُنقل بين الأجهزة والروابط ----------
+function exportData() {
+  const tasks = {};
+  SCHOOLS.forEach(sc => { tasks[sc.id] = sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), []); });
+  return JSON.stringify({ app: 'school-health-planner', v: 2, at: new Date().toISOString(), preparer: state.preparer, tasks });
+}
+
+function importData(text) {
+  let data;
+  try { data = JSON.parse(text.trim()); } catch { return 'النص ليس نسخة احتياطية صحيحة. تأكد أنك نسخته كاملاً.'; }
+  if (!data || data.app !== 'school-health-planner' || typeof data.tasks !== 'object') return 'هذه ليست نسخة احتياطية من هذا التطبيق.';
+  let added = 0, updated = 0;
+  SCHOOLS.forEach(sc => {
+    const incoming = Array.isArray(data.tasks[sc.id]) ? data.tasks[sc.id] : [];
+    const current = sc.id === state.school ? state.tasks : store.get(tasksKey(sc.id), []);
+    const byId = new Map(current.map(t => [t.id, t]));
+    incoming.forEach(t => { if (!t || !t.id) return; byId.has(t.id) ? updated++ : added++; byId.set(t.id, t); });
+    store.set(tasksKey(sc.id), [...byId.values()]);
+  });
+  if (data.preparer && !state.preparer) { state.preparer = data.preparer; savePrefs(); }
+  load(); render();
+  return { added, updated };
+}
+
+function openBackup() {
+  const json = exportData();
+  const count = Object.values(JSON.parse(json).tasks).reduce((n, l) => n + l.length, 0);
+  modalRoot.innerHTML = `
+    <div class="overlay" data-action="close-overlay">
+      <div class="sheet max-w-lg p-5 sm:p-6 flex flex-col gap-4">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold flex-1">نقل البيانات</h2>
+          <button type="button" class="icon-btn" data-action="close" aria-label="إغلاق"><i data-lucide="x"></i></button>
+        </div>
+        <p class="muted text-sm">المهام محفوظة في هذا المتصفح فقط، لذلك لا تظهر تلقائياً في رابط آخر أو جهاز آخر. انسخ النسخة الاحتياطية من هنا، ثم افتح التطبيق في المكان الآخر والصقها في «استيراد».</p>
+
+        <section class="flex flex-col gap-2">
+          <h3 class="font-bold">١. تصدير من هنا <span class="muted text-sm font-semibold num">(${count} مهمة للمدرستين والبرنامج)</span></h3>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn-primary" data-action="backup-copy"><i data-lucide="copy"></i>نسخ النسخة الاحتياطية</button>
+            ${inFrame ? '' : `<button class="btn" data-action="backup-file"><i data-lucide="download"></i>حفظ كملف</button>`}
+          </div>
+          <textarea id="backup-out" class="input num" rows="3" readonly dir="ltr" style="font-size:12px">${esc(json)}</textarea>
+        </section>
+
+        <section class="flex flex-col gap-2">
+          <h3 class="font-bold">٢. استيراد في المكان الآخر</h3>
+          <textarea id="backup-in" class="input" rows="3" dir="ltr" style="font-size:12px" placeholder="الصق النسخة الاحتياطية هنا"></textarea>
+          <div class="flex flex-wrap gap-2 items-center">
+            <button class="btn btn-primary" data-action="backup-import"><i data-lucide="upload"></i>استيراد</button>
+            <label class="btn" style="cursor:pointer"><i data-lucide="file-up"></i>اختيار ملف<input id="backup-file-in" type="file" accept=".json,application/json,text/plain" class="sr-only"></label>
+          </div>
+          <p class="text-xs muted">الاستيراد يضيف المهام إلى ما هو موجود، ولا يحذف شيئاً. المهمة المكررة تُحدَّث بآخر نسخة.</p>
+          <p id="backup-msg" class="text-sm font-semibold" hidden></p>
+        </section>
+      </div>
+    </div>`;
+  refreshIcons();
+}
+
+function backupResult(r) {
+  const el = modalRoot.querySelector('#backup-msg');
+  if (!el) return;
+  el.hidden = false;
+  if (typeof r === 'string') { el.style.color = 'var(--danger)'; el.textContent = r; return; }
+  el.style.color = 'var(--ok)';
+  el.textContent = `تم الاستيراد: ${r.added} مهمة جديدة، و${r.updated} مهمة محدَّثة.`;
+  toast('تم استيراد المهام');
+}
+
+modalRoot.addEventListener('change', e => {
+  if (e.target.id !== 'backup-file-in' || !e.target.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = () => backupResult(importData(String(reader.result)));
+  reader.readAsText(e.target.files[0]);
 });
 
 function openLockMenu() {
