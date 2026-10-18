@@ -181,8 +181,8 @@ document.documentElement.lang = 'ar';
 document.documentElement.dir = 'rtl';
 
 const SCHOOLS = [
-  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء' },
-  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان' },
+  { id: 'abu-darda', name: 'مدرسة أبو الدرداء للتعليم الأساسي', short: 'أبو الدرداء', grades: [5, 6, 7, 8, 9, 10, 11, 12] },
+  { id: 'saif-bin-sultan', name: 'مدرسة الإمام سيف بن سلطان للبنين', short: 'الإمام سيف بن سلطان', grades: [11, 12] },
 ];
 const GRADES = { 5: 'الخامس', 6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر', 11: 'الحادي عشر', 12: 'الثاني عشر' };
 const COLUMNS = {
@@ -264,6 +264,7 @@ const gradeName = g => `الصف ${GRADES[g]}`;
 const typeOf = t => TYPES[t.type] || TYPES.custom;
 const prioOf = t => PRIORITIES[t.priority] || PRIORITIES.normal;
 const isUpcoming = t => t.status === 'today' && !!t.due && t.due > today();
+const schoolGrades = () => SCHOOLS.find(s => s.id === state.school).grades;
 const titleOf = t => (t.title && t.title.trim()) || typeOf(t).defaultTitle || typeOf(t).label;
 const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
 const refreshIcons = () => { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 } }); };
@@ -549,7 +550,7 @@ function renderForm() {
           <fieldset>
             <legend class="lbl">${mode === 'single' ? 'الصف المستهدف' : mode === 'multi' ? 'الصفوف المستهدفة (يمكن اختيار أكثر من صف)' : 'الصفوف المستهدفة (اختياري)'}</legend>
             <div class="flex flex-wrap gap-2">
-              ${Object.keys(GRADES).map(g => `
+              ${schoolGrades().map(g => `
                 <label class="gchip">
                   <input type="${mode === 'single' ? 'radio' : 'checkbox'}" name="grade" value="${g}" ${draft.grades.includes(+g) ? 'checked' : ''}>
                   <span>${gradeName(g)}</span>
@@ -889,7 +890,9 @@ function toast(msg) {
 
 function loadSample() {
   const d = today();
-  const mk = o => ({ ...newTask(o.type || 'custom'), ...o, id: uid() });
+  // تكييف صفوف المثال مع صفوف المدرسة الحالية
+  const sg = list => list.every(g => schoolGrades().includes(g)) ? list : schoolGrades().slice(0, list.length);
+  const mk = o => ({ ...newTask(o.type || 'custom'), ...o, grades: sg(o.grades || []), id: uid() });
   state.tasks = [
     mk({ type: 'radio', title: 'اليوم العالمي لغسل اليدين', desc: 'فقرة توعوية قصيرة في طابور الصباح', priority: 'urgent', status: 'done', doneAt: d }),
     mk({ type: 'lecture', title: 'التغذية الصحية وأضرار الوجبات السريعة', grades: [8], priority: 'medium', status: 'done', doneAt: d }),
