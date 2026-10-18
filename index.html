@@ -37,6 +37,9 @@
   .num { font-variant-numeric: tabular-nums; }
   svg.lucide { width: 18px; height: 18px; flex-shrink: 0; }
 
+  .daily { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; background: var(--accent-soft); color: #075e55; font-weight: 600; border: 1px solid #cbe8e2; }
+  .daily svg.lucide { width: 20px; height: 20px; color: var(--accent); }
+  .daily small { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border-radius: 12px; padding: 8px 16px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); transition: background .15s, border-color .15s, box-shadow .15s; }
   .btn:hover { border-color: #c7ced6; box-shadow: var(--shadow); }
@@ -294,6 +297,43 @@ const toIso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate(
 const fromIso = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const addDays = (s, n) => { const d = fromIso(s); d.setDate(d.getDate() + n); return toIso(d); };
 const today = () => toIso(new Date());
+
+// الترحيب وعبارة اليوم
+const OWNER = 'داود اليعقوبي';
+const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'صباح الخير' : 'مساء الخير'; };
+const DAILY_WORDS = [
+  'صحة الطالب اليوم هي نجاح المجتمع غداً.',
+  'كل خطوة صغيرة في التوعية تصنع فرقاً كبيراً.',
+  'الوقاية خير من العلاج، وأنت خط الدفاع الأول.',
+  'ابدأ يومك بابتسامة، فهي أول دواء تقدّمه.',
+  'العمل المنظَّم نصف الإنجاز.',
+  'طالب سليم، عقل سليم، مستقبل مشرق.',
+  'ما تزرعه اليوم من وعي يحصده الطلاب طوال حياتهم.',
+  'الإتقان لا يحتاج وقتاً أطول، بل تركيزاً أكبر.',
+  'غسل اليدين عادة صغيرة تحمي مدرسة كاملة.',
+  'إنجاز مهمة واحدة الآن أفضل من تأجيل عشر.',
+  'رسالتك الصحية تصل حين تُقال بحب.',
+  'خذ قسطاً من الماء والراحة؛ صحتك أولاً لتعطي غيرك.',
+  'كل فحص تجريه قد يكتشف ما يغيّر حياة طالب.',
+  'النجاح هو مجموع جهود صغيرة تتكرر كل يوم.',
+  'التخطيط الجيد يجعل اليوم المزدحم يوماً هادئاً.',
+  'أنت قدوة؛ ما تفعله يتعلمه الطلاب قبل ما تقوله.',
+  'الغذاء الصحي اليوم استثمار في عقول الغد.',
+  'لا تقلل من أثر محاضرة قصيرة؛ فقد تكون بداية تغيير.',
+  'الصحة تاج على رؤوس الأصحاء، فاحفظه لطلابك.',
+  'يوم جديد، فرصة جديدة لصناعة أثر طيب.',
+  'التعاون مع المعلمين وأولياء الأمور يضاعف النتائج.',
+  'الهدوء والصبر من أدوات الممرض الناجح.',
+  'سجّل إنجازك، فالتوثيق يحفظ الجهد ويثبته.',
+  'ابدأ بالأهم، ثم المهم، وسيأتي الباقي.',
+  'بيئة مدرسية صحية تبدأ بغرفة صحية منظمة.',
+  'قليل دائم خير من كثير منقطع.',
+  'كل طالب يستحق أن يشعر بالأمان والرعاية.',
+  'التطعيم حماية للفرد وللمجتمع كله.',
+  'اجعل نيتك في عملك خيراً، يبارك الله فيه.',
+  'أحسنت بالأمس، وستُحسن اليوم بإذن الله.',
+];
+const dailyWord = () => DAILY_WORDS[Math.floor(fromIso(today()).getTime() / 864e5) % DAILY_WORDS.length];
 const LOCALE = 'ar-OM-u-nu-latn-ca-gregory';
 const fmtLong = s => new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(fromIso(s));
 const fmtShort = s => new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long' }).format(fromIso(s));
@@ -404,7 +444,8 @@ function render() {
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div class="min-w-0">
           <p class="text-sm font-semibold muted flex items-center gap-2 num"><i data-lucide="calendar-days"></i>${esc(fmtLong(today()))}</p>
-          <h1 class="text-2xl sm:text-3xl font-bold mt-1">مهامي اليومية</h1>
+          <p class="font-bold mt-1" style="color:var(--accent)">${greeting()} يا ${OWNER}، أهلاً بك</p>
+          <h1 class="text-2xl sm:text-3xl font-bold">مهامي اليومية</h1>
           <p class="muted font-medium">${esc(school.name)}</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -414,6 +455,8 @@ function render() {
           <button class="btn btn-primary" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
         </div>
       </div>
+
+      <div class="daily" role="note"><i data-lucide="sparkles"></i><div><small>عبارة اليوم</small>${esc(dailyWord())}</div></div>
 
       <div class="seg grid grid-cols-1 sm:grid-cols-2" role="tablist" aria-label="اختيار المدرسة أو البرنامج">
         ${SCHOOLS.map(sc => `<button role="tab" aria-selected="${sc.id === state.school}" data-action="school" data-id="${sc.id}" class="${sc.id === state.school ? 'on' : ''} ${sc.program ? 'sm:col-span-2' : ''}">${esc(sc.name)}</button>`).join('')}
@@ -1222,8 +1265,8 @@ function showLock(err = '') {
     <div class="lock">
       <form id="lock-form" class="lock-card" novalidate>
         <span style="color:var(--accent);display:grid;place-items:center"><i data-lucide="lock-keyhole" style="width:40px;height:40px"></i></span>
-        <h1 class="text-2xl font-bold">مهامي اليومية</h1>
-        <p class="muted">أدخل الرمز السري لفتح التطبيق.</p>
+        <h1 class="text-2xl font-bold">أهلاً ${OWNER}</h1>
+        <p class="muted">أدخل الرمز السري لفتح مهامك اليومية.</p>
         <input id="lock-pin" class="input pin num" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-label="الرمز السري">
         ${err ? `<p class="err" role="alert">${err}</p>` : ''}
         <button type="submit" class="btn btn-primary w-full">فتح</button>
