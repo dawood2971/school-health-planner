@@ -688,7 +688,7 @@ function validate() {
   return '';
 }
 
-function closeModal() { modalRoot.innerHTML = ''; draft = null; confirmAction = null; }
+function closeModal() { modalRoot.innerHTML = ''; draft = null; confirmAction = null; clearTimeout(renderTimer); rendered = null; }
 
 // إنفوجرافيك الأسبوع بأسلوب الملصق للمدرستين والبرنامج معاً
 function weekPosterHTML() {
@@ -959,6 +959,7 @@ modalRoot.addEventListener('input', e => {
   savePrefs();
   const el = modalRoot.querySelector('#ig-preparer-out');
   if (el) el.textContent = state.preparer.trim() || '—';
+  prerender(900);
 });
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalRoot.innerHTML) closeModal(); });
@@ -1065,46 +1066,64 @@ function openInfographic(kind = 'day') {
       </div>
     </div>`;
   refreshIcons();
+  prerender();
+}
+
+// نجهّز الصورة في الخلفية فور فتح نافذة التصدير، فيكون الحفظ فورياً عند الضغط
+let rendered = null, renderTimer = 0;
+function prerender(delay = 300) {
+  rendered = null;
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => { rendered = renderCard(); rendered.catch(() => { rendered = null; }); }, delay);
+}
+async function renderCard() {
+  const card = document.getElementById('infographic');
+  if (!card || !window.html2canvas) throw new Error('no-tool');
+  card.querySelectorAll('svg.lucide').forEach(svg => svg.setAttribute('stroke', getComputedStyle(svg).color));
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  card.classList.add('capturing');
+  const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+    .finally(() => card.classList.remove('capturing'));
+  const blob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('blob')), 'image/png'));
+  return { card, blob, url: URL.createObjectURL(blob) };
 }
 
 async function generateImage() {
-  const card = document.getElementById('infographic');
   const out = document.getElementById('ig-image-out');
-  if (!card || !window.html2canvas) { toast('تعذر تحميل أداة إنشاء الصور'); return; }
-  card.querySelectorAll('svg.lucide').forEach(svg => svg.setAttribute('stroke', getComputedStyle(svg).color));
-  toast('جارٍ إنشاء الصورة…');
+  if (!window.html2canvas) { toast('تعذر تحميل أداة إنشاء الصور'); return; }
+  clearTimeout(renderTimer);
+  const card = document.getElementById('infographic');
+  if (!rendered) rendered = renderCard();
+  let img;
   try {
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    card.classList.add('capturing');
-    const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
-      .finally(() => card.classList.remove('capturing'));
-    const url = canvas.toDataURL('image/png');
-    let saved = false;
-    const downloads = await downloadsReady;
-    if (downloads) {
-      try {
-        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-        await downloads.save({ filename: exportName, data: blob });
-        saved = true; toast('تم حفظ الصورة');
-      } catch (err) {
-        toast(err?.code === 'declined' ? 'تم إلغاء الحفظ' : 'تعذر الحفظ المباشر، احفظ الصورة أدناه يدوياً');
-      }
-    }
-    if (!inFrame) {
-      const a = document.createElement('a');
-      a.href = url; a.download = exportName;
-      document.body.appendChild(a); a.click(); a.remove();
-      toast('تم حفظ الصورة');
-    }
-    out.hidden = false;
-    out.innerHTML = `
-      <p class="text-sm font-semibold muted mb-2">${saved ? 'تم حفظ الصورة. يمكنك أيضاً حفظ النسخة أدناه يدوياً.' : inFrame
-        ? 'الصورة جاهزة: اضغط عليها مطولاً (في الجوال) أو انقر بالزر الأيمن واختر «حفظ الصورة».'
-        : 'تم تنزيل الصورة. يمكنك أيضاً حفظ النسخة أدناه يدوياً.'}</p>
-      <img src="${url}" alt="بطاقة تقرير اليوم" style="width:100%;max-width:520px;border-radius:14px;border:1px solid var(--line)">`;
+    img = await rendered;
+    if (img.card !== card) { rendered = renderCard(); img = await rendered; }
   } catch {
+    rendered = null;
     toast('تعذر إنشاء الصورة، حاول مرة أخرى');
+    return;
   }
+  let saved = false;
+  const downloads = await downloadsReady;
+  if (downloads) {
+    try {
+      await downloads.save({ filename: exportName, data: img.blob });
+      saved = true; toast('تم حفظ الصورة');
+    } catch (err) {
+      toast(err?.code === 'declined' ? 'تم إلغاء الحفظ' : 'تعذر الحفظ المباشر، احفظ الصورة أدناه يدوياً');
+    }
+  }
+  if (!inFrame) {
+    const a = document.createElement('a');
+    a.href = img.url; a.download = exportName;
+    document.body.appendChild(a); a.click(); a.remove();
+    saved = true; toast('تم حفظ الصورة');
+  }
+  out.hidden = false;
+  out.innerHTML = `
+    <p class="text-sm font-semibold muted mb-2">${saved ? 'تم حفظ الصورة. يمكنك أيضاً حفظ النسخة أدناه يدوياً.'
+      : 'الصورة جاهزة: اضغط عليها مطولاً (في الجوال) أو انقر بالزر الأيمن واختر «حفظ الصورة».'}</p>
+    <img src="${img.url}" alt="بطاقة التصدير" style="width:100%;max-width:520px;border-radius:14px;border:1px solid var(--line)">`;
 }
 
 // ---------- الأحداث ----------
