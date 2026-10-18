@@ -5,6 +5,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <style>
   /* Layout: رأس (العنوان، التاريخ، التقدم، الإضافة) ثم لوحة بثلاثة أعمدة: مهام اليوم / قيد التنفيذ / منجزة.
      تصميم فاتح بالكامل بناءً على طلب المستخدم (خلفية فاتحة نظيفة). */
@@ -54,7 +57,28 @@
   .compass .needle { transform-origin: 100px 100px; animation: seek 3.2s cubic-bezier(.3, .7, .3, 1) both, sway 6s ease-in-out 3.2s infinite; }
   @keyframes seek { 0% { transform: rotate(-140deg); } 35% { transform: rotate(38deg); } 55% { transform: rotate(-22deg); } 72% { transform: rotate(12deg); } 86% { transform: rotate(-5deg); } 100% { transform: rotate(0deg); } }
   @keyframes sway { 0%, 100% { transform: rotate(0deg); } 30% { transform: rotate(7deg); } 65% { transform: rotate(-5deg); } }
-  @media (prefers-reduced-motion: reduce) { .compass .needle { animation: none; } }
+  .hero.calm .compass .needle { animation: sway 6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .compass .needle, .hero.calm .compass .needle { animation: none; } }
+
+  /* Lenis: التمرير الناعم */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-stopped { overflow: hidden; }
+
+  /* Light Rays (منقول من React Bits): أشعة WebGL خلف محتوى الهيدر */
+  .rays { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: .7; }
+
+  /* Star Border (منقول من React Bits) حول الزر الأساسي */
+  .star-border { position: relative; display: inline-block; margin-top: 8px; padding: 1.5px 0; border-radius: 999px; overflow: hidden; }
+  .star-border .sb-top, .star-border .sb-bottom { position: absolute; width: 300%; height: 50%; border-radius: 50%; opacity: .75; z-index: 0; background: radial-gradient(circle, #f5d27a, transparent 10%); animation: 6s linear infinite alternate; }
+  .star-border .sb-bottom { bottom: -11px; right: -250%; animation-name: star-bottom; }
+  .star-border .sb-top { top: -11px; left: -250%; animation-name: star-top; }
+  .star-border .hero-cta { position: relative; z-index: 1; margin-top: 0; }
+  @keyframes star-bottom { 0% { transform: translate(0, 0); opacity: 1; } 100% { transform: translate(-100%, 0); opacity: 0; } }
+  @keyframes star-top { 0% { transform: translate(0, 0); opacity: 1; } 100% { transform: translate(100%, 0); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .star-border .sb-top, .star-border .sb-bottom { animation: none; opacity: 0; } }
+  .blur-word { display: inline-block; will-change: transform, filter, opacity; }
 
   .actions { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 58px; padding: 10px 6px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); font-weight: 600; font-size: 13.5px; text-align: center; line-height: 1.3; transition: border-color .15s, transform .15s; }
@@ -528,12 +552,12 @@ function render() {
   const s = stats();
   app.innerHTML = `
     <header class="flex flex-col gap-4">
-      <section class="hero" aria-label="بوصلة">
+      <section class="hero ${firstPaint ? '' : 'calm'}" aria-label="بوصلة">
         <div class="hero-inner">
           <span class="hero-date num"><i data-lucide="calendar-days"></i>${esc(fmtLong(today()))}</span>
           <p class="hero-greet">${greeting()} يا ${OWNER}، مرحبا مليون ولا يسدن</p>
-          <h1>بوصلة</h1>
-          <button class="hero-cta" data-action="add" data-type="custom"><i data-lucide="plus"></i>إضافة مهمة</button>
+          <h1 id="hero-title">بوصلة</h1>
+          <button class="star-border" data-action="add" data-type="custom"><span class="sb-bottom"></span><span class="sb-top"></span><span class="hero-cta"><i data-lucide="plus"></i>إضافة مهمة</span></button>
         </div>
         <div class="hero-side">
           ${COMPASS_SVG}
@@ -560,11 +584,11 @@ function render() {
         <div class="flex items-end justify-between gap-3 flex-wrap mb-3">
           <div>
             <h2 class="font-bold">نسبة إنجاز مهام اليوم</h2>
-            <p class="muted text-sm font-semibold num">${esc(school.name)} · ${s.total ? `أنجزت ${s.done} من ${s.total}` : 'لا توجد مهام مستحقة اليوم'}</p>
+            <p class="muted text-sm font-semibold num">${esc(school.name)} · ${s.total ? `أنجزت <span data-count="${s.done}" data-key="done">${s.done}</span> من <span data-count="${s.total}" data-key="total">${s.total}</span>` : 'لا توجد مهام مستحقة اليوم'}</p>
           </div>
-          <span class="pct num" ${s.total && s.pct === 100 ? 'style="color:var(--accent)"' : ''}>${s.pct}%</span>
+          <span class="pct num" ${s.total && s.pct === 100 ? 'style="color:var(--accent)"' : ''}><span data-count="${s.pct}" data-key="pct">${s.pct}</span>%</span>
         </div>
-        <div class="bar ${s.total && s.pct === 100 ? 'full' : 'gold'}" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${s.pct}%"></span></div>
+        <div id="day-bar" class="bar ${s.total && s.pct === 100 ? 'full' : 'gold'}" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${s.pct}%"></span></div>
         ${s.total && s.pct === 100 ? `<div class="badge-done"><i data-lucide="party-popper"></i>أحسنت يا داود! أنجزت كل مهام اليوم.</div>` : ''}
       </section>
 
@@ -586,6 +610,7 @@ function render() {
         <button class="btn" data-action="sample"><i data-lucide="file-text"></i>تحميل مهام تجريبية لرؤية الشكل</button>
       </div>` : ''}`;
   refreshIcons();
+  afterRender();
 }
 
 function column(key) {
@@ -596,7 +621,7 @@ function column(key) {
       <div class="col-head">
         <span style="color:${C.color}"><i data-lucide="${C.icon}"></i></span>
         <h2 id="col-${key}" class="font-bold text-[17px]">${C.label}</h2>
-        <span class="count num">${list.length}</span>
+        <span class="count num" data-count="${list.length}" data-key="col-${key}">${list.length}</span>
         ${key === 'done' && list.length ? `<button class="move ms-auto" style="color:var(--danger)" data-action="clear-done"><i data-lucide="eraser"></i>حذف المهام المنجزة</button>` : ''}
       </div>
       ${list.length
@@ -708,7 +733,7 @@ function renderForm() {
   const mode = schoolGrades().length ? T.grades : 'none';
   const statuses = isEdit ? ['today', 'progress', 'done'] : ['today', 'progress'];
   modalRoot.innerHTML = `
-    <div class="overlay" data-action="close-overlay">
+    <div class="overlay" data-action="close-overlay" data-lenis-prevent>
       <form id="task-form" class="sheet max-w-lg p-5 sm:p-6 flex flex-col gap-4" novalidate>
         <div class="flex items-center gap-3">
           <h2 class="text-xl font-bold flex-1">${isEdit ? 'تعديل المهمة' : 'إضافة مهمة'}</h2>
@@ -995,7 +1020,7 @@ function weekReportHTML() {
 function openConfirm(title, text, okLabel, onOk) {
   confirmAction = onOk;
   modalRoot.innerHTML = `
-    <div class="overlay" data-action="close-overlay">
+    <div class="overlay" data-action="close-overlay" data-lenis-prevent>
       <div class="sheet max-w-sm p-5 sm:p-6 flex flex-col gap-3" role="alertdialog" aria-labelledby="cf-title">
         <h2 id="cf-title" class="text-lg font-bold">${title}</h2>
         <p class="muted">${text}</p>
@@ -1180,7 +1205,7 @@ function openInfographic(kind = 'day') {
     ? `school-health-week-${weekDays(weekOffset)[0]}.png`
     : `school-health-report-${state.school}-${today()}.png`;
   modalRoot.innerHTML = `
-    <div class="overlay" data-action="close-overlay">
+    <div class="overlay" data-action="close-overlay" data-lenis-prevent>
       <div class="sheet p-4 sm:p-6 flex flex-col gap-4" style="max-width:960px">
         <div class="flex items-center gap-3">
           <h2 class="text-xl font-bold flex-1">${kind === 'week' ? 'جدول الأسبوع للمدرستين والبرنامج' : 'تقرير اليوم'}</h2>
@@ -1441,7 +1466,7 @@ function openBackup() {
   const json = exportData();
   const count = Object.values(JSON.parse(json).tasks).reduce((n, l) => n + l.length, 0);
   modalRoot.innerHTML = `
-    <div class="overlay" data-action="close-overlay">
+    <div class="overlay" data-action="close-overlay" data-lenis-prevent>
       <div class="sheet max-w-lg p-5 sm:p-6 flex flex-col gap-4">
         <div class="flex items-center gap-3">
           <h2 class="text-xl font-bold flex-1">نقل البيانات</h2>
@@ -1493,7 +1518,7 @@ modalRoot.addEventListener('change', e => {
 function openLockMenu() {
   const set = hasPin();
   modalRoot.innerHTML = `
-    <div class="overlay" data-action="close-overlay">
+    <div class="overlay" data-action="close-overlay" data-lenis-prevent>
       <form id="pin-form" class="sheet max-w-sm p-5 sm:p-6 flex flex-col gap-3" novalidate>
         <div class="flex items-center gap-3">
           <h2 class="text-lg font-bold flex-1">${set ? 'قفل التطبيق' : 'حماية التطبيق برمز سري'}</h2>
@@ -1521,6 +1546,142 @@ modalRoot.addEventListener('submit', async e => {
   store.set(PIN_KEY, await hashPin(a));
   closeModal(); render(); toast('تم تفعيل القفل بالرمز السري');
 });
+
+// ---------- الحركة: GSAP + ScrollTrigger مع Lenis، ومكوّنات منقولة من React Bits ----------
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const hasGsap = !!(window.gsap && window.ScrollTrigger);
+if (hasGsap) gsap.registerPlugin(ScrollTrigger);
+
+// Lenis يتحرك على نبض GSAP نفسه، وScrollTrigger يتحدّث مع كل تمرير
+let lenis = null;
+if (hasGsap && window.Lenis && !reduceMotion) {
+  lenis = new Lenis({ duration: 1.1, smoothWheel: true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(time => lenis.raf(time * 1000));
+  gsap.ticker.lagSmoothing(0);
+}
+
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+let firstPaint = true;
+const lastCounts = {};
+
+function afterRender() {
+  mountRays();
+  if (!hasGsap || reduceMotion) { firstPaint = false; return; }
+  countUp();
+  if (firstPaint) { blurText(document.getElementById('hero-title')); revealSections(); }
+  else ScrollTrigger.getAll().forEach(t => t.kill());
+  firstPaint = false;
+}
+
+// Blur Text (React Bits): كل كلمة تنزل من ضبابية إلى وضوح
+function blurText(el, { delay = 0.2, step = 0.35 } = {}) {
+  if (!el) return;
+  el.innerHTML = el.textContent.trim().split(/\s+/).map(w => `<span class="blur-word">${esc(w)}</span>`).join(' ');
+  el.querySelectorAll('.blur-word').forEach((w, i) => {
+    gsap.timeline({ delay: 0.15 + i * delay })
+      .fromTo(w, { filter: 'blur(10px)', opacity: 0, y: -40 }, { filter: 'blur(5px)', opacity: 0.5, y: 5, duration: step, ease: 'none' })
+      .to(w, { filter: 'blur(0px)', opacity: 1, y: 0, duration: step, ease: 'power1.out', clearProps: 'filter,will-change' });
+  });
+}
+
+// ظهور ناعم لكل قسم عند الوصول إليه أثناء التمرير (مرة واحدة)
+function revealSections() {
+  gsap.from('.hero', { y: 14, autoAlpha: 0, duration: 0.8, ease: 'power2.out' });
+  const els = ['.actions', '.quote', '.tabs', '.progress-card', 'header > .flex:last-child', 'main > .column', 'section[aria-labelledby="up-h"]']
+    .flatMap(sel => [...document.querySelectorAll(sel)]);
+  els.forEach((el, i) => gsap.from(el, {
+    y: 22, autoAlpha: 0, duration: 0.8, ease: 'power2.out', delay: el.matches('main > .column') ? (i % 3) * 0.08 : 0,
+    scrollTrigger: { trigger: el, start: 'top 92%', once: true },
+  }));  // Tailwind والخطوط تغيّر المقاسات بعد أول رسم، فنعيد حساب نقاط الظهور
+  setTimeout(() => ScrollTrigger.refresh(), 350);
+  if (document.fonts) document.fonts.ready.then(() => ScrollTrigger.refresh());
+}
+
+// الأرقام تعدّ من قيمتها السابقة إلى الجديدة
+function countUp() {
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const key = el.dataset.key, to = Number(el.dataset.count), from = lastCounts[key] ?? 0;
+    lastCounts[key] = to;
+    if (from === to) return;
+    const o = { v: from };
+    el.textContent = from;
+    gsap.to(o, { v: to, duration: 1.1, ease: 'power2.out', onUpdate: () => { el.textContent = Math.round(o.v); } });
+  });
+  const bar = document.querySelector('#day-bar > span');
+  if (bar) {
+    const to = parseFloat(bar.style.width) || 0, from = lastCounts.bar ?? 0;
+    lastCounts.bar = to;
+    if (from !== to) gsap.fromTo(bar, { width: `${from}%` }, { width: `${to}%`, duration: 1.1, ease: 'power2.out' });
+  }
+}
+
+// Light Rays (React Bits) بـ WebGL مباشرة: أشعة من أعلى الهيدر بالأخضر الزيتي والذهبي
+const rays = (() => {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'rays';
+  const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false, antialias: false });
+  if (!gl) return null;
+  const vs = 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }';
+  const fs = `precision highp float;
+    uniform float iTime; uniform vec2 iResolution; uniform vec3 colA; uniform vec3 colB;
+    const float spread = 1.0, rayLength = 2.0, fadeDistance = 1.1, distortion = 0.08;
+    float rayStrength(vec2 src, vec2 dir, vec2 coord, float seedA, float seedB, float speed) {
+      vec2 d = coord - src; vec2 n = normalize(d);
+      float a = dot(n, dir) + distortion * sin(iTime * 2.0 + length(d) * 0.01) * 0.2;
+      float spreadF = pow(max(a, 0.0), 1.0 / spread);
+      float dist = length(d);
+      float lenF = clamp((iResolution.x * rayLength - dist) / (iResolution.x * rayLength), 0.0, 1.0);
+      float fadeF = clamp((iResolution.x * fadeDistance - dist) / (iResolution.x * fadeDistance), 0.5, 1.0);
+      float base = clamp((0.45 + 0.15 * sin(a * seedA + iTime * speed)) + (0.3 + 0.2 * cos(-a * seedB + iTime * speed)), 0.0, 1.0);
+      return base * lenF * fadeF * spreadF;
+    }
+    void main() {
+      vec2 coord = vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y);
+      vec2 src = vec2(iResolution.x * 0.5, -iResolution.y * 0.2);
+      float r1 = rayStrength(src, vec2(0.0, 1.0), coord, 36.2214, 21.11349, 0.45);
+      float r2 = rayStrength(src, vec2(0.0, 1.0), coord, 22.3991, 18.0234, 0.33);
+      float fade = 1.0 - coord.y / iResolution.y;
+      float a = clamp((r1 * 0.5 + r2 * 0.4) * (0.35 + fade * 0.65), 0.0, 1.0);
+      vec3 col = mix(colA, colB, clamp(r2 / max(r1 + r2, 0.001), 0.0, 1.0) * 0.6);
+      gl_FragColor = vec4(col, a);
+    }`;
+  const sh = (type, src) => { const x = gl.createShader(type); gl.shaderSource(x, src); gl.compileShader(x); return x; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const u = n => gl.getUniformLocation(prog, n);
+  gl.uniform3f(u('colA'), 15 / 255, 118 / 255, 110 / 255);   // --accent
+  gl.uniform3f(u('colB'), 217 / 255, 154 / 255, 30 / 255);   // --gold
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  let visible = true, raf = 0;
+  const t0 = performance.now();
+  const draw = () => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const w = Math.round(canvas.clientWidth * dpr), h = Math.round(canvas.clientHeight * dpr);
+    if (!w || !h) return;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; gl.viewport(0, 0, w, h); }
+    gl.uniform2f(u('iResolution'), w, h);
+    gl.uniform1f(u('iTime'), reduceMotion ? 4 : (performance.now() - t0) / 1000);
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+  const loop = () => { raf = 0; if (!visible || document.hidden) return; draw(); raf = requestAnimationFrame(loop); };
+  const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !reduceMotion && !raf) loop(); });
+  return {
+    mount(host) {
+      if (canvas.parentNode !== host) host.prepend(canvas);
+      io.disconnect(); io.observe(host);
+      requestAnimationFrame(() => (reduceMotion ? draw() : (!raf && loop())));
+    },
+  };
+})();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) mountRays(); });
+function mountRays() { const hero = document.querySelector('.hero'); if (rays && hero) rays.mount(hero); }
 
 load();
 if (hasPin()) showLock(); else render();
