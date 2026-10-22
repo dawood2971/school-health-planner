@@ -451,13 +451,15 @@ setInterval(() => {
   tickPeriod();
 }, 1000);
 
-// جدول الحصص اليومي (الأحد إلى الخميس) والعد التنازلي
+// جدول الحصص اليومي (الأحد إلى الخميس) والعد التنازلي — معتمد لمدرسة الإمام سيف بن سلطان فقط حالياً
 const PERIODS = [
   ['الطابور', '07:10', '07:25'], ['الحصة الأولى', '07:25', '08:05'], ['الحصة الثانية', '08:10', '08:50'],
   ['الحصة الثالثة', '08:55', '09:35'], ['الحصة الرابعة', '09:40', '10:20'], ['الفسحة', '10:20', '10:45'],
   ['الحصة الخامسة', '10:45', '11:25'], ['الحصة السادسة', '11:30', '12:10'], ['الحصة السابعة', '12:15', '12:55'],
   ['الحصة الثامنة', '13:00', '13:40'],
 ].map(([name, from, to]) => ({ name, from, to, a: toSec(from), b: toSec(to) }));
+const PERIOD_SCHOOLS = ['saif-bin-sultan'];
+const hasPeriods = () => PERIOD_SCHOOLS.includes(state.school);
 function toSec(hm) { const [h, m] = hm.split(':').map(Number); return h * 3600 + m * 60; }
 const fmtLeft = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h ? `${h}:${pad2(m)}:${pad2(x)}` : `${pad2(m)}:${pad2(x)}`; };
 function periodNow() {
@@ -476,6 +478,7 @@ function periodNow() {
   return { kind: 'brk', label: 'استراحة بين الحصص', name: `التالية: ${nx.name}`, time: `تبدأ ${nx.from}`, left: nx.a - now, pct: (now - prev.b) / (nx.a - prev.b) * 100 };
 }
 function periodHTML() {
+  if (!hasPeriods()) return '';
   const p = periodNow();
   return `<section class="period ${p.kind}" id="period" aria-live="off" aria-label="جدول الحصص">
     <button class="pd-bell ${state.bell ? '' : 'off'}" data-action="bell" aria-pressed="${state.bell}" aria-label="${state.bell ? 'إيقاف تنبيه الحصص' : 'تفعيل تنبيه الحصص'}" title="${state.bell ? 'التنبيه مفعّل، اضغط للإيقاف' : 'اضغط لتفعيل التنبيه'}"><i data-lucide="${state.bell ? 'bell-ring' : 'bell-off'}"></i></button>
@@ -485,9 +488,9 @@ function periodHTML() {
   </section>`;
 }
 // تنبيه بداية الحصة ونهايتها: نغمة واهتزاز ورسالة، وإشعار إذا كان التطبيق في الخلفية
-let lastIdx, lastTick = 0, audioCtx;
+let lastIdx, lastTick = 0, lastSchool, audioCtx;
 function periodIndex() {
-  const d = new Date(), wd = d.getDay(); if (wd === 5 || wd === 6) return -1;
+  const d = new Date(), wd = d.getDay(); if (wd === 5 || wd === 6 || !hasPeriods()) return -1;
   const now = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
   return PERIODS.findIndex(p => now >= p.a && now < p.b);
 }
@@ -515,7 +518,8 @@ function bellAlert(msg) {
   }
 }
 function checkBell() {
-  const idx = periodIndex(), t = Date.now(), stale = t - lastTick > 90000;
+  const idx = periodIndex(), t = Date.now(), stale = t - lastTick > 90000 || lastSchool !== state.school;
+  lastSchool = state.school;
   if (state.bell && lastIdx !== undefined && idx !== lastIdx && !stale) {
     const ended = lastIdx >= 0 ? PERIODS[lastIdx] : null, started = idx >= 0 ? PERIODS[idx] : null;
     const parts = [];
