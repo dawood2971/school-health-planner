@@ -224,6 +224,9 @@
   #infographic .ig-sec-head small { color: #66727f; font-size: 13px; font-weight: 600; }
   #infographic .ig-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: #f9fafb; border: 1px solid #eef1f4; }
   #infographic .ig-row + .ig-row { margin-top: 8px; }
+  #infographic .ig-row.done { background: #e6f6ec; border-color: #b5e2c6; border-inline-start: 4px solid #16a34a; }
+  #infographic .ig-row.done .ig-row-title { color: #14532d; }
+  #infographic .ig-row.done .ig-row-meta { color: #3f7a55; }
   #infographic .ig-row-title { font-weight: 700; font-size: 15px; }
   #infographic .ig-row-meta { font-size: 12.5px; color: #66727f; font-weight: 600; }
   #infographic .ig-pill { display: inline-block; line-height: 1; font-size: 12.5px; font-weight: 700; padding: 8px 12px 9px; border-radius: 999px; white-space: nowrap; }
@@ -241,6 +244,10 @@
   #infographic .wk-today { background: #e3f3f0; }
   #infographic .wk-item { display: flex; gap: 8px; align-items: flex-start; }
   #infographic .wk-item + .wk-item { margin-top: 8px; }
+  #infographic .wk-item.done { background: #d4f0dd; border-radius: 10px; padding: 6px 8px; margin-inline: -4px; border-inline-start: 3px solid #16a34a; }
+  #infographic .wk-item.done .wk-title { color: #14532d; }
+  #infographic .wk-item.done .wk-meta { color: #3f7a55; }
+  #infographic .wk-item.done .done-ok { margin-top: 3px; }
   #infographic .wk-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; margin-top: 8px; }
   #infographic .wk-title { font-weight: 700; font-size: 14px; line-height: 1.45; }
   #infographic .wk-meta { font-size: 12px; color: #66727f; font-weight: 600; }
@@ -287,7 +294,10 @@
   .poster .p-tasks { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
   .poster .p-task { display: inline-flex; align-items: center; gap: 7px; background: #ffffff; border-radius: 6px; padding: 0 10px; font-size: 14px; font-weight: 700; }
   .poster .p-task em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #ffffff; background: #48484a; border-radius: 4px; padding: 0 6px; }
-  .poster .p-task.done { color: #9a928a; text-decoration: line-through; }
+  /* المهام المنجزة: تظليل أخضر بعلامة صح بدل الشطب */
+  .poster .p-task.done { background: #dcf3e4; color: #14532d; border: 1.5px solid #a7dcbc; }
+  .poster .p-task.done em { background: #15803d; }
+  .done-ok { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 99px; background: #16a34a; flex-shrink: 0; }
   .poster .p-dot { width: 9px; height: 9px; border-radius: 99px; flex-shrink: 0; }
   .poster .p-foot { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; font-weight: 700; color: #7a7470; }
   /* html2canvas يقيس خط الأساس بصورة مؤقتة بلا alt؛ قاعدة Tailwind (img{display:block}) تفسد القياس فتنزاح النصوص */
@@ -946,7 +956,7 @@ function weekPosterHTML() {
           <div class="p-tasks">
             ${list.length ? list.map(t => `
               <span class="p-task ${t.status === 'done' ? 'done' : ''}">
-                <span class="p-dot" style="background:${t.status === 'done' ? '#9a928a' : prioOf(t).fg}"></span>${esc(titleOf(t))}<em>${esc(t.tag)}</em>
+                ${t.status === 'done' ? `<span class="done-ok"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>` : `<span class="p-dot" style="background:${prioOf(t).fg}"></span>`}${esc(titleOf(t))}<em>${esc(t.tag)}</em>
               </span>`).join('') : '<span class="p-note">لا توجد مهام</span>'}
           </div>
         </div>`; }).join('')}
@@ -975,10 +985,10 @@ function weekReportHTML() {
       const T = typeOf(t), P = prioOf(t), isDone = t.status === 'done';
       const grades = (t.grades || []).slice().sort((a, b) => a - b).map(gradeName).join('، ');
       return `
-        <div class="wk-item">
-          <span class="wk-dot" style="background:${isDone ? '#15803d' : P.fg}"></span>
+        <div class="wk-item ${isDone ? 'done' : ''}">
+          ${isDone ? `<span class="done-ok"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>` : `<span class="wk-dot" style="background:${P.fg}"></span>`}
           <div style="min-width:0">
-            <div class="wk-title" style="${isDone ? 'color:#66727f' : ''}">${isDone ? '✓ ' : ''}${esc(titleOf(t))}</div>
+            <div class="wk-title">${esc(titleOf(t))}</div>
             <div class="wk-meta">${esc([T.label, grades].filter(Boolean).join(' · '))}</div>
           </div>
         </div>`;
@@ -1160,13 +1170,13 @@ function infographicHTML() {
           const grades = (t.grades || []).slice().sort((a, b) => a - b).map(gradeName).join('، ');
           const meta = [T.label, grades, t.due && t.due < today() && key !== 'done' ? 'متأخرة' : ''].filter(Boolean).join(' · ');
           return `
-            <div class="ig-row">
+            <div class="ig-row ${key === 'done' ? 'done' : ''}">
               <span class="tile" style="background:${rgba(T.color, .13)};color:${T.color}"><i data-lucide="${T.icon}"></i></span>
               <div style="flex:1;min-width:0">
                 <div class="ig-row-title">${esc(titleOf(t))}</div>
                 <div class="ig-row-meta">${esc(meta)}</div>
               </div>
-              <span class="ig-pill" style="background:${key === 'done' ? '#e3f5e9' : P.bg};color:${key === 'done' ? '#15803d' : P.fg}">${key === 'done' ? 'منجزة' : P.label}</span>
+              <span class="ig-pill" style="background:${key === 'done' ? '#16a34a' : P.bg};color:${key === 'done' ? '#ffffff' : P.fg}">${key === 'done' ? 'منجزة ✓' : P.label}</span>
             </div>`;
         }).join('') : `<div class="ig-row" style="color:#66727f">لا توجد مهام.</div>`}
       </section>`;
