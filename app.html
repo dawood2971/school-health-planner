@@ -228,9 +228,9 @@
   #infographic .ig-sec-head small { color: #66727f; font-size: 13px; font-weight: 600; }
   #infographic .ig-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: #f9fafb; border: 1px solid #eef1f4; }
   #infographic .ig-row + .ig-row { margin-top: 8px; }
-  #infographic .ig-row.done { background: #e6f6ec; border-color: #b5e2c6; border-inline-start: 4px solid #16a34a; }
-  #infographic .ig-row.done .ig-row-title { color: #14532d; }
-  #infographic .ig-row.done .ig-row-meta { color: #3f7a55; }
+  #infographic .ig-row.done { background: #f0f8f6; border-color: #cfe6e1; border-inline-start: 4px solid #0f766e; }
+  #infographic .ig-row.done .ig-row-title { color: #134e4a; }
+  #infographic .ig-row.done .ig-row-meta { color: #4b7f79; }
   #infographic .ig-row-title { font-weight: 700; font-size: 15px; }
   #infographic .ig-row-meta { font-size: 12.5px; color: #66727f; font-weight: 600; }
   #infographic .ig-pill { display: inline-block; line-height: 1; font-size: 12.5px; font-weight: 700; padding: 8px 12px 9px; border-radius: 999px; white-space: nowrap; }
@@ -248,9 +248,9 @@
   #infographic .wk-today { background: #e3f3f0; }
   #infographic .wk-item { display: flex; gap: 8px; align-items: flex-start; }
   #infographic .wk-item + .wk-item { margin-top: 8px; }
-  #infographic .wk-item.done { background: #d4f0dd; border-radius: 10px; padding: 6px 8px; margin-inline: -4px; border-inline-start: 3px solid #16a34a; }
-  #infographic .wk-item.done .wk-title { color: #14532d; }
-  #infographic .wk-item.done .wk-meta { color: #3f7a55; }
+  #infographic .wk-item.done { background: #fdf5e3; border-radius: 10px; padding: 6px 8px; margin-inline: -4px; border-inline-start: 3px solid #d99a1e; }
+  #infographic .wk-item.done .wk-title { color: #5c3d00; }
+  #infographic .wk-item.done .wk-meta { color: #8a6a2e; }
   #infographic .wk-item.done .done-ok { margin-top: 3px; }
   #infographic .wk-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; margin-top: 8px; }
   #infographic .wk-title { font-weight: 700; font-size: 14px; line-height: 1.45; }
@@ -298,10 +298,11 @@
   .poster .p-tasks { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
   .poster .p-task { display: inline-flex; align-items: center; gap: 7px; background: #ffffff; border-radius: 6px; padding: 0 10px; font-size: 14px; font-weight: 700; }
   .poster .p-task em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #ffffff; background: #48484a; border-radius: 4px; padding: 0 6px; }
-  /* المهام المنجزة: تظليل أخضر بعلامة صح بدل الشطب */
-  .poster .p-task.done { background: #dcf3e4; color: #14532d; border: 1.5px solid #a7dcbc; }
-  .poster .p-task.done em { background: #15803d; }
-  .done-ok { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 99px; background: #16a34a; flex-shrink: 0; }
+  /* المهام المنجزة: تظليل رملي من ألوان الملصق بعلامة صح مرجانية بدل الشطب */
+  .poster .p-task.done { background: #e6d9c6; color: #48484a; border: 1.5px solid #d3c1a6; }
+  .poster .p-task.done em { background: #e2725b; }
+  .poster .p-task.done .done-ok { background: #e2725b; }
+  .done-ok { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 99px; background: #d99a1e; flex-shrink: 0; }
   .poster .p-dot { width: 9px; height: 9px; border-radius: 99px; flex-shrink: 0; }
   .poster .p-foot { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; font-weight: 700; color: #7a7470; }
   /* html2canvas يقيس خط الأساس بصورة مؤقتة بلا alt؛ قاعدة Tailwind (img{display:block}) تفسد القياس فتنزاح النصوص */
@@ -1035,7 +1036,7 @@ function weekReportHTML() {
         </div>
         <div class="wk-legend">
           ${Object.values(PRIORITIES).map(P => `<span><span class="wk-dot" style="background:${P.fg}"></span>${P.label}</span>`).join('')}
-          <span><span class="wk-dot" style="background:#15803d"></span>منجزة</span>
+          <span><span class="done-ok" style="width:12px;height:12px"></span>منجزة</span>
         </div>
       </div>
       <div class="ig-foot">
@@ -1194,7 +1195,7 @@ function infographicHTML() {
                 <div class="ig-row-title">${esc(titleOf(t))}</div>
                 <div class="ig-row-meta">${esc(meta)}</div>
               </div>
-              <span class="ig-pill" style="background:${key === 'done' ? '#16a34a' : P.bg};color:${key === 'done' ? '#ffffff' : P.fg}">${key === 'done' ? 'منجزة ✓' : P.label}</span>
+              <span class="ig-pill" style="background:${key === 'done' ? '#0f766e' : P.bg};color:${key === 'done' ? '#ffffff' : P.fg}">${key === 'done' ? 'منجزة ✓' : P.label}</span>
             </div>`;
         }).join('') : `<div class="ig-row" style="color:#66727f">لا توجد مهام.</div>`}
       </section>`;
@@ -1212,7 +1213,7 @@ function infographicHTML() {
       <div class="ig-body">
         <div class="ig-stats">
           <div class="ig-stat"><b class="num">${s.total}</b><small>مهام اليوم</small></div>
-          <div class="ig-stat"><b class="num" style="color:#15803d">${s.done}</b><small>منجزة</small></div>
+          <div class="ig-stat"><b class="num" style="color:#0f766e">${s.done}</b><small>منجزة</small></div>
           <div class="ig-stat"><b class="num" style="color:#b54708">${s.left}</b><small>متبقية</small></div>
         </div>
         ${sec('today')}
