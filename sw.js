@@ -1,5 +1,5 @@
 // عامل الخدمة: يحفظ التطبيق ومكتباته ليعمل بدون إنترنت
-const CACHE = 'bawsala-v7';
+const CACHE = 'bawsala-v8';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -30,4 +30,10 @@ self.addEventListener('fetch', e => {
     }).catch(() => hit);
     return hit || net;
   }));
+});
+
+// الضغط على إشعار الحصة يفتح التطبيق
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => list.length ? list[0].focus() : self.clients.openWindow('./')));
 });
