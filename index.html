@@ -413,7 +413,7 @@ setInterval(() => {
 }, 1000);
 
 // الترحيب وعبارة اليوم
-const OWNER = 'داود اليعقوبي';
+const OWNER = 'بو فاطمة';
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'صباح الخير' : 'مساء الخير'; };
 const DAILY_WORDS = [
   'صحة الطالب اليوم هي نجاح المجتمع غداً.',
@@ -569,7 +569,7 @@ function render() {
       <section class="hero ${firstPaint ? '' : 'calm'}" aria-label="بوصلة">
         <div class="hero-inner">
           <span class="hero-date num"><i data-lucide="calendar-days"></i>${esc(fmtLong(today()))}</span>
-          <p class="hero-greet">${greeting()} يا ${OWNER}، مرحبا مليون ولا يسدن</p>
+          <p class="hero-greet">${greeting()} ${OWNER}، مرحبا مليون ولا يسدن</p>
           <h1 id="hero-title">بوصلة</h1>
           <button class="star-border" data-action="add" data-type="custom"><span class="sb-bottom"></span><span class="sb-top"></span><span class="hero-cta"><i data-lucide="plus"></i>إضافة مهمة</span></button>
         </div>
@@ -603,7 +603,7 @@ function render() {
           <span class="pct num" ${s.total && s.pct === 100 ? 'style="color:var(--accent)"' : ''}><span data-count="${s.pct}" data-key="pct">${s.pct}</span>%</span>
         </div>
         <div id="day-bar" class="bar ${s.total && s.pct === 100 ? 'full' : 'gold'}" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${s.pct}%"></span></div>
-        ${s.total && s.pct === 100 ? `<div class="badge-done"><i data-lucide="party-popper"></i>أحسنت يا داود! أنجزت كل مهام اليوم.</div>` : ''}
+        ${s.total && s.pct === 100 ? `<div class="badge-done"><i data-lucide="party-popper"></i>أحسنت بو فاطمة! أنجزت كل مهام اليوم.</div>` : ''}
       </section>
 
       <div class="flex flex-wrap items-center gap-2">
