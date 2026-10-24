@@ -607,6 +607,8 @@ const diffDays = (a, b) => Math.round((fromIso(b) - fromIso(a)) / 86400000);
 const weekStart = (offset = 0) => { const g = fromIso(today()).getDay(); return addDays(today(), -g + (g >= 5 ? 7 : 0) + 7 * offset); };
 const weekDays = offset => Array.from({ length: 5 }, (_, i) => addDays(weekStart(offset), i));
 // الجمعة والسبت يتبعان الأسبوع القادم (يبدأ الأحد)
+// أيام العمل من الأحد إلى الخميس: الجمعة والسبت ينتقلان إلى الأحد التالي
+const workday = d => { const g = fromIso(d).getDay(); return g === 5 ? addDays(d, 2) : g === 6 ? addDays(d, 1) : d; };
 const weekOf = d => Math.floor((diffDays(weekStart(0), d) + 2) / 7);
 function fmtTime(t) {
   const [h, m] = t.split(':').map(Number);
@@ -1219,7 +1221,11 @@ function updateDueHint() {
 }
 
 modalRoot.addEventListener('change', e => {
-  if (draft && e.target.id === 'f-due' && e.target.value) { formWeek = weekOf(e.target.value); refreshDayStrip(); }
+  if (draft && e.target.id === 'f-due' && e.target.value) {
+    const w = workday(e.target.value);
+    if (w !== e.target.value) { e.target.value = w; toast('أيام المهام من الأحد إلى الخميس، نُقلت إلى الأحد'); }
+    formWeek = weekOf(w); refreshDayStrip();
+  }
   if (draft && e.target.name === 'status') updateDueHint();
   if (!draft || e.target.id !== 'f-type') return;
   readForm();
@@ -1479,7 +1485,7 @@ async function generateImage() {
 
 // ---------- الأحداث ----------
 function newTask(type) {
-  return { id: uid(), type, title: '', desc: '', grades: [], priority: 'normal', due: today(), status: 'today', prevStatus: 'today', doneAt: null, created: Date.now() };
+  return { id: uid(), type, title: '', desc: '', grades: [], priority: 'normal', due: workday(today()), status: 'today', prevStatus: 'today', doneAt: null, created: Date.now() };
 }
 
 app.addEventListener('click', e => {
