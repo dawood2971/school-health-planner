@@ -605,7 +605,8 @@ const diffDays = (a, b) => Math.round((fromIso(b) - fromIso(a)) / 86400000);
 // أسبوع الدوام من الأحد إلى الخميس؛ في الجمعة والسبت يكون «هذا الأسبوع» هو الأسبوع القادم
 const weekStart = (offset = 0) => { const g = fromIso(today()).getDay(); return addDays(today(), -g + (g >= 5 ? 7 : 0) + 7 * offset); };
 const weekDays = offset => Array.from({ length: 5 }, (_, i) => addDays(weekStart(offset), i));
-const weekOf = d => Math.floor(diffDays(weekStart(0), d) / 7);
+// الجمعة والسبت يتبعان الأسبوع القادم (يبدأ الأحد)
+const weekOf = d => Math.floor((diffDays(weekStart(0), d) + 2) / 7);
 function fmtTime(t) {
   const [h, m] = t.split(':').map(Number);
   return `${pad(((h + 11) % 12) + 1)}:${pad(m)} ${h < 12 ? 'ص' : 'م'}`;
