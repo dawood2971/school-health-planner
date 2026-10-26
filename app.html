@@ -438,27 +438,38 @@ setInterval(() => {
   tickPeriod();
 }, 1000);
 
-// جدول الحصص اليومي (الأحد إلى الخميس) والعد التنازلي — معتمد لمدرسة الإمام سيف بن سلطان فقط حالياً
-const PERIODS = [
-  ['الطابور', '07:10', '07:25'], ['الحصة الأولى', '07:25', '08:05'], ['الحصة الثانية', '08:10', '08:50'],
-  ['الحصة الثالثة', '08:55', '09:35'], ['الحصة الرابعة', '09:40', '10:20'], ['الفسحة', '10:20', '10:45'],
-  ['الحصة الخامسة', '10:45', '11:25'], ['الحصة السادسة', '11:30', '12:10'], ['الحصة السابعة', '12:15', '12:55'],
-  ['الحصة الثامنة', '13:00', '13:40'],
-].map(([name, from, to]) => ({ name, from, to, a: toSec(from), b: toSec(to) }));
-const PERIOD_SCHOOLS = ['saif-bin-sultan'];
-const hasPeriods = () => PERIOD_SCHOOLS.includes(state.school);
+// جدول الحصص اليومي (الأحد إلى الخميس) والعد التنازلي، لكل مدرسة جدولها
+const mkPeriods = rows => rows.map(([name, from, to]) => ({ name, from, to, a: toSec(from), b: toSec(to) }));
+const SCHEDULES = {
+  'saif-bin-sultan': mkPeriods([
+    ['الطابور', '07:10', '07:25'], ['الحصة الأولى', '07:25', '08:05'], ['الحصة الثانية', '08:10', '08:50'],
+    ['الحصة الثالثة', '08:55', '09:35'], ['الحصة الرابعة', '09:40', '10:20'], ['الفسحة', '10:20', '10:45'],
+    ['الحصة الخامسة', '10:45', '11:25'], ['الحصة السادسة', '11:30', '12:10'], ['الحصة السابعة', '12:15', '12:55'],
+    ['الحصة الثامنة', '13:00', '13:40'],
+  ]),
+  // توقيت الصلاة (الصيفي)
+  'abu-darda': mkPeriods([
+    ['الطابور', '07:00', '07:10'], ['الحصة الأولى', '07:10', '07:50'], ['الحصة الثانية', '07:55', '08:35'],
+    ['الحصة الثالثة', '08:40', '09:20'], ['الحصة الرابعة', '09:25', '10:05'], ['الفسحة', '10:05', '10:25'],
+    ['الحصة الخامسة', '10:25', '11:05'], ['الحصة السادسة', '11:05', '11:45'], ['الحصة السابعة', '11:45', '12:25'],
+    ['الصلاة', '12:25', '12:45'], ['الحصة الثامنة', '12:45', '13:25'],
+  ]),
+};
+const BREAKS = ['الفسحة', 'الصلاة'];
+let PERIODS = [];
+const hasPeriods = () => { PERIODS = SCHEDULES[state.school] || []; return PERIODS.length > 0; };
 function toSec(hm) { const [h, m] = hm.split(':').map(Number); return h * 3600 + m * 60; }
 const fmtLeft = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h ? `${h}:${pad2(m)}:${pad2(x)}` : `${pad2(m)}:${pad2(x)}`; };
 function periodNow() {
   const d = new Date(), wd = d.getDay(), now = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
-  if (wd === 5 || wd === 6) return { kind: 'idle', label: 'جدول الحصص', name: 'عطلة نهاية الأسبوع', time: 'يبدأ الدوام الأحد 07:10' };
+  if (wd === 5 || wd === 6) return { kind: 'idle', label: 'جدول الحصص', name: 'عطلة نهاية الأسبوع', time: `يبدأ الدوام الأحد ${PERIODS[0].from}` };
   const first = PERIODS[0], last = PERIODS[PERIODS.length - 1];
   if (now < first.a) return { kind: 'brk', label: 'قبل بداية الدوام', name: `${first.name} يبدأ ${first.from}`, time: 'الوقت المتبقي حتى البداية', left: first.a - now, pct: 0 };
   if (now >= last.b) return { kind: 'idle', label: 'جدول الحصص', name: 'انتهى الدوام المدرسي', time: `آخر حصة انتهت ${last.to}` };
   const i = PERIODS.findIndex(p => now >= p.a && now < p.b);
   if (i >= 0) {
     const p = PERIODS[i], nx = PERIODS[i + 1];
-    return { kind: p.name === 'الفسحة' ? 'brk' : '', label: p.name === 'الفسحة' || p.name === 'الطابور' ? 'الآن' : 'الحصة الحالية', name: p.name,
+    return { kind: BREAKS.includes(p.name) ? 'brk' : '', label: BREAKS.includes(p.name) || p.name === 'الطابور' ? 'الآن' : 'الحصة الحالية', name: p.name,
       time: `\u2066${p.from} – ${p.to}\u2069${nx ? ` · التالية: ${nx.name}` : ''}`, left: p.b - now, pct: (now - p.a) / (p.b - p.a) * 100 };
   }
   const nx = PERIODS.find(p => p.a > now), prev = PERIODS[PERIODS.indexOf(nx) - 1];
